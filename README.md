@@ -1,5 +1,7 @@
 # Amenda
 
+[![Npm package version](https://img.shields.io/npm/v/@zimtsui/amenda?style=flat-square)](https://www.npmjs.com/package/@zimtsui/amenda)
+
 Amenda is another AI workflow orchestrator, which leverage the most native power of TypeScript.
 
 ## Concepts
