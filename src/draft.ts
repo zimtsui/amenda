@@ -41,7 +41,7 @@ export namespace Draft {
 				throw yield f(r.value);
 			} catch (e) {
 				if (e instanceof Rejected) r = await draft.next(e);
-				else throw draft.throw(e).then(() => e);
+				else throw await draft.throw(e).then(() => e);
 			}
 		}
 	}

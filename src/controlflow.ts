@@ -1,45 +1,49 @@
 import { Draft } from './draft.ts';
+import { Scoped } from "./scoped.js";
+import { type Amenda } from "./amenda.js";
 
 
-export type Workflow<input, output> = (input: input) => Draft<output>;
+export type Workflow<i, o, is = void, os = void> = (i: i, si: is) => Amenda<o, os>;
 
-export class Controlflow<input, output> {
-	public get callback(): (input: input) => Promise<output> {
-		return (input) => Draft.to(this.workflow(input));
+
+export class Controlflow<i, o, is = void, os = void> {
+	private constructor(public kleisli: (si: Scoped<is, i>) => Amenda<o, os>) {}
+
+	public callback(is: is): (i: i) => Promise<o> {
+		return async i => Draft.to(this.kleisli(Scoped.of(i, is))).then(Scoped.epsilon);
 	}
 
-	private constructor(public workflow: Workflow<input, output>) {}
 
-	public append<nextOutput>(nextworkflow: Workflow<output, nextOutput>): Controlflow<input, nextOutput> {
-		const kleisli = Draft.map(nextworkflow);
-		return new Controlflow(input => Draft.mu(kleisli(this.workflow(input))));
+	public append<nexto, nextos = void>(nextworkflow: Workflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
+		const kleisli = Draft.map((so: Scoped<os, o>) => nextworkflow(so.value, so.state));
+		return new Controlflow(si => Draft.mu(kleisli(this.kleisli(si))));
 	}
 
-	public static append<input, output>(workflow: Workflow<input, output>) {
-		return new Controlflow(workflow);
+	public static append<i, o, is, os>(workflow: Workflow<i, o, is, os>): Controlflow<i, o, is, os> {
+		return new Controlflow(si => workflow(si.value, si.state));
 	}
 
-	public pipe<nextOutput>(f: (output: output) => Promise<nextOutput>): Controlflow<input, nextOutput> {
-		return this.append(output => Draft.from(f(output)));
+	public pipe<nexto, nextos>(f: (o: o, os: os) => Promise<Scoped<nextos, nexto>>): Controlflow<i, nexto, is, nextos> {
+		return this.append((o, os) => Draft.from(f(o, os)));
 	}
 
-	public static pipe<input, output>(f: (input: input) => Promise<output>): Controlflow<input, output> {
-		return new Controlflow(input => Draft.from(f(input)));
+	public static pipe<i, o, is, os>(f: (i: i, is: is) => Promise<Scoped<os, o>>): Controlflow<i, o, is, os> {
+		return Controlflow.append((i, is) => Draft.from(f(i, is)));
 	}
 
-	public by<nextOutput>(evaluate: Draft.Morphism<output, nextOutput>): Controlflow<input, nextOutput> {
-		return new Controlflow(input => evaluate(this.workflow(input)));
+	public by<nexto, nextos>(evaluate: Draft.Morphism<Scoped<os, o>, Scoped<nextos, nexto>>): Controlflow<i, nexto, is, nextos> {
+		return new Controlflow(si => evaluate(this.kleisli(si)));
 	}
 
-	public static by<input, output>(evaluate: Draft.Morphism<input, output>): Controlflow<input, output> {
-		return new Controlflow(input => evaluate(Draft.eta(input)));
+	public static by<input, output, is, os>(evaluate: Draft.Morphism<Scoped<is, input>, Scoped<os, output>>): Controlflow<input, output, is, os> {
+		return new Controlflow(si => evaluate(Draft.eta(si)));
 	}
 
-	public map<nextOutput>(f: (output: output) => nextOutput): Controlflow<input, nextOutput> {
-		return this.by(Draft.map(f));
+	public map<nexto, nextos>(f: (o: o, os: os) => Scoped<nextos, nexto>): Controlflow<i, nexto, is, nextos> {
+		return this.by(Draft.map(so => f(so.value, so.state)));
 	}
 
-	public static map<input, output>(f: (output: input) => output): Controlflow<input, output> {
-		return Controlflow.by(Draft.map(f));
+	public static map<i, o, is, os>(f: (i: i, is: is) => Scoped<os, o>): Controlflow<i, o, is, os> {
+		return Controlflow.by(Draft.map(si => f(si.value, si.state)));
 	}
 }
