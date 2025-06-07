@@ -30,11 +30,11 @@ export class Controlflow<i, o, is = void, os = is> {
 		return Controlflow.append(Workflow.thenaf(f));
 	}
 
-	public thensf<nexto, nextos>(f: Controlflow.StatefulSyncFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
-		return this.append(Workflow.thensf(f));
+	public thenf<nexto, nextos>(f: Controlflow.StatefulSyncFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
+		return this.append(Workflow.thenf(f));
 	}
-	public static thensf<i, o, is = void, os = is>(f: Controlflow.StatefulSyncFunction<i, o, is, os>): Controlflow<i, o, is, os> {
-		return Controlflow.append(Workflow.thensf(f));
+	public static thenf<i, o, is = void, os = is>(f: Controlflow.StatefulSyncFunction<i, o, is, os>): Controlflow<i, o, is, os> {
+		return Controlflow.append(Workflow.thenf(f));
 	}
 
 	public by<nexto, nextos>(f: Draft.Morphism<StatefulValue<o, os>, StatefulValue<nexto, nextos>>): Controlflow<i, nexto, is, nextos> {
@@ -58,11 +58,11 @@ export class Controlflow<i, o, is = void, os = is> {
 		return Controlflow.append(Workflow.pipeaf(f));
 	}
 
-	public pipesf<nexto>(f: Controlflow.StatelessSyncFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
-		return this.append(Workflow.pipesf(f));
+	public pipef<nexto>(f: Controlflow.StatelessSyncFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
+		return this.append(Workflow.pipef(f));
 	}
-	public static pipesf<i, o, is = void>(f: Controlflow.StatelessSyncFunction<i, o, is>): Controlflow<i, o, is> {
-		return Controlflow.append(Workflow.pipesf(f));
+	public static pipef<i, o, is = void>(f: Controlflow.StatelessSyncFunction<i, o, is>): Controlflow<i, o, is> {
+		return Controlflow.append(Workflow.pipef(f));
 	}
 }
 

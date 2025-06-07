@@ -74,7 +74,7 @@ const cf = Controlflow
 		throw yield [x, { ...state, b: 2 }];
 	})
 	.thenaf(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
-	.thensf((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])	// append a stateful sync function
+	.thenf((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])	// append a stateful sync function
 	.pipesf((x: null, state) => state.s);
 
 export default await cf.callback(null);	// 6
@@ -111,28 +111,24 @@ export default await cf.callback('1+1 等于几？');
 ```ts
 import { Rejected, Controlflow } from '@zimtsui/amenda';
 
-declare const solveMathProblem: (mathProblem: string) => AsyncGenerator<string, never, Rejected>;
+declare async function *generateCode(): AsyncGenerator<string, never, Rejected>;
+declare function syntaxCheck(code: string): void;
 
-async function *evaluator(solutions: AsyncGenerator<string, never, Rejected>): AsyncGenerator<string, never, Rejected> {
-	for (let r = await solutions.next();;) try {
-		const messages = [
-			{ role: 'system', content: 'Please check the solutions to a math problem.' },
-			{ role: 'user', content: r.value },
-		];
-		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		const functionCall = completion.choices[0].message.tool_calls[0];
-		if (functionCall?.name !== 'wrong') throw yield r.value;
-		r = await solutions.next(new Rejected(functionCall.arguments.reason));
+async function *evaluator(codes: AsyncGenerator<string, never, Rejected>): AsyncGenerator<string, never, Rejected> {
+	for (let r = await codes.next();;) try {
+		syntaxCheck(r.value);
+		throw yield r.value;
 	} catch (e) {
-		throw await solutions.throw(e).then(() => e);
+		if (e instanceof SyntaxError) r = await codes.next(new Rejected(e.message));
+		else throw await codes.throw(e).then(() => e);
 	}
 }
 
 const cf = Controlflow
-	.pipe(solveMathProblem)
+	.pipe(generateCode)
 	.by(evaluator);	// append an evaluator
 
-export default await cf.callback('What does 1+1 equal to?');
+export default await cf.callback();
 ```
 
 ### Parallel

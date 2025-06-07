@@ -14,7 +14,7 @@ export namespace Workflow {
 		return ([i, is]) => Draft.from(f(i, is));
 	}
 
-	export function thensf<i, o, is = void, os = is>(f: (i: i, is: is) => StatefulValue<o, os>): Workflow<i, o, is, os> {
+	export function thenf<i, o, is = void, os = is>(f: (i: i, is: is) => StatefulValue<o, os>): Workflow<i, o, is, os> {
 		return thenaf(async (i, is) => f(i, is));
 	}
 
@@ -26,7 +26,7 @@ export namespace Workflow {
 		return pipe((i, is) => Draft.from(f(i, is)));
 	}
 
-	export function pipesf<i, o, is = void>(f: (i: i, is: is) => o): Workflow<i, o, is> {
+	export function pipef<i, o, is = void>(f: (i: i, is: is) => o): Workflow<i, o, is> {
 		return pipeaf(async (i, is) => f(i, is));
 	}
 }
