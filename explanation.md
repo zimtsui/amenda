@@ -62,15 +62,15 @@ A `Workflow` is a morphism in the Kleisli category of the draft monad.
 export namespace Draft {
 	export type Kleisli<input, output> = (input: input) => Draft<output>;
 }
-export type Workflow<i, o, istate = void, ostate = istate> = Draft.Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
+export type Workflow<i, o, istate, ostate> = Draft.Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
 ```
 
 ## Morphisms of Draft Category 草稿范畴的态射
 
-An evaluator in the design pattern of optimizer evaluator is a morphism in the Draft Category.
+An evaluator in the design pattern of optimizer evaluator is a morphism in the draft category.
 
 优化评估设计模式中的评估器是草稿范畴的态射。
 
 ```ts
-type Evaluator<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
+export type EvaluatorFunction<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
 ```

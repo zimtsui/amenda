@@ -155,7 +155,7 @@ const solution: string = await cf.callback('1+1 等于几？');
 
 ```
 
-### Design Pattern of Optimizer Evaluator
+### [Design Pattern of Optimizer Evaluator](https://www.anthropic.com/engineering/building-effective-agents)
 
 ```ts
 import { Rejected, Controlflow } from '@zimtsui/amenda';
@@ -181,7 +181,7 @@ const cf = Controlflow
 	.pipe(solveMathProblem)
 	.by(evaluator);	// append an evaluator
 
-const solution: string = await cf.callback('1+1 等于几？');
+const solution: string = await cf.callback('What does 1+1 equal to?');
 ```
 
 ### Parallel
@@ -204,6 +204,4 @@ const cf = Controlflow
 const solution: string = await cf.callback('1+1 等于几？');
 ```
 
-## Explanation of Amenda in Mathematics
-
-[Explanation of Amenda in Mathematics](./explanation.md)
+## [Explanation of Amenda in Mathematics](./explanation.md)
