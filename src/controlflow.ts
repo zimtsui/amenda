@@ -16,10 +16,10 @@ export class Controlflow<i, o, is = void, os = is> {
 		return new Controlflow(workflow);
 	}
 
-	public thengf<nexto, nextos>(f: Controlflow.StatefulGeneratorFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
+	public then<nexto, nextos>(f: Controlflow.StatefulGeneratorFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.append(Workflow.then(f));
 	}
-	public static thengf<i, o, is = void, os = is>(f: Controlflow.StatefulGeneratorFunction<i, o, is, os>): Controlflow<i, o, is, os> {
+	public static then<i, o, is = void, os = is>(f: Controlflow.StatefulGeneratorFunction<i, o, is, os>): Controlflow<i, o, is, os> {
 		return Controlflow.append(Workflow.then(f));
 	}
 
@@ -44,10 +44,10 @@ export class Controlflow<i, o, is = void, os = is> {
 		return new Controlflow(si => f(Draft.eta(si)));
 	}
 
-	public pipegf<nexto>(f: Controlflow.StatelessGeneratorFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
+	public pipe<nexto>(f: Controlflow.StatelessGeneratorFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
 		return this.append(Workflow.pipe(f));
 	}
-	public static pipegf<i, o, is = void>(f: Controlflow.StatelessGeneratorFunction<i, o, is>): Controlflow<i, o, is> {
+	public static pipe<i, o, is = void>(f: Controlflow.StatelessGeneratorFunction<i, o, is>): Controlflow<i, o, is> {
 		return Controlflow.append(Workflow.pipe(f));
 	}
 

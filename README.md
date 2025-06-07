@@ -6,13 +6,11 @@ Amenda is another AI workflow orchestrator, which leverages the most native powe
 
 ## Rationale
 
-AI workflows have pipelines, and so do traditional workflows. AI workflow nodes can retry, and so can traditional workflow nodes. AI workflow nodes can run in parallel, and so can traditional workflow nodes. AI workflow nodes can run conditionally, and so can traditional workflow nodes.
+Traditional workflows have almost everything that AI workflows have, for example, pipelines, parallelism, conditionals, retries, etc. Popular AI workflow frameworks (e.g. LangChain) unify the APIs of various model suppliers. But in terms of orchestration, they are no different from traditional orchestrators.
 
-Popular AI workflow orchestrators (e.g. LangChain) unify the APIs of all kinds of model suppliers. But in terms of orchestration, they are no different from traditional orchestrators.
+So what is the key difference between AI workflows and traditional workflows in terms of orchestration? Is there anything that traditional orchestrators cannot do in AI workflows?
 
-So what is the key difference between AI workflow and traditional workflow in orchestration? Is there anything that traditional orchestrators cannot do in AI workflows?
-
-The answer is about retrying. In traditional workflows, if a node fails, or if the output of a node does not satisfy the downstream, the node should completely retry, doing the same work again with the same accuracy as the last attempt. In AI workflows, when a stateful AI node should retry, it revises its former output.
+The answer is about the retry mechanism. In traditional workflows, if a node fails, or if the output of a node is rejected by the downstream, the node should typically retry by repeating the exact same operation with the same accuracy as the last attempt. While in AI workflows, when a stateful AI node should retry, it revises its former output.
 
 ## Concept
 
@@ -31,7 +29,7 @@ declare const openai: OpenAI;
 async function *solveMathProblem(mathProblem: string): AsyncGenerator<string, never, Rejected> {
 	const messages = [
 		{ role: 'system', content: 'Please solve a math problem for the user.' },
-		{ role: 'user', content: `${mathProblem}` },
+		{ role: 'user', content: mathProblem },
 	];
 	for (;;) {
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
@@ -58,9 +56,9 @@ declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator
 const cf = Controlflow
 	.pipesf((text: string) => text.trimStart())	// append a sync function
 	.pipeaf(async (text: string) => text.trimEnd())	// append an async function
-	.pipegf(translateEnglishToChinese)	// append a generator function
-	.pipegf(solveChineseMathProblem)
-	.pipegf(translateChineseToEnglish);
+	.pipe(translateEnglishToChinese)	// append an async generator function
+	.pipe(solveChineseMathProblem)
+	.pipe(translateChineseToEnglish);
 
 export default await cf.callback('what does 1+1 equal to?');
 ```
@@ -72,7 +70,7 @@ import { Controlflow } from '@zimtsui/amenda';
 
 const cf = Controlflow
 	.pipesf((x: null, state: void) => [x, { a: 1 }])	// stateful functions returns/yields a tuple of output and a new state
-	.thengf(async function *(x: null, state) {	// append a stateful generator function
+	.then(async function *(x: null, state) {	// append a stateful async generator function
 		throw yield [x, { ...state, b: 2 }];
 	})
 	.thenaf(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
@@ -95,14 +93,14 @@ declare const translateRussianToEnglish: (russianText: string) => AsyncGenerator
 declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
-	.pipegf(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
+	.pipe(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': throw yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': throw yield *translateRussianToEnglish(mathProblem); break;
 			case 'English': throw yield mathProblem; break;
 			default: throw new Rejected('Unsupported language'); break;
 		}
-	}).pipegf(solveEnglishMathProblem);
+	}).pipe(solveEnglishMathProblem);
 
 export default await cf.callback('1+1 等于几？');
 
@@ -131,7 +129,7 @@ async function *evaluator(solutions: AsyncGenerator<string, never, Rejected>): A
 }
 
 const cf = Controlflow
-	.pipegf(solveMathProblem)
+	.pipe(solveMathProblem)
 	.by(evaluator);	// append an evaluator
 
 export default await cf.callback('What does 1+1 equal to?');
