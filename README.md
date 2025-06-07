@@ -6,7 +6,7 @@ Amenda is another AI workflow orchestrator, which leverages the most native powe
 
 ## Rationale
 
-AI workflows have pipelines, and so do traditional workflows. AI workflow nodes can retry, and so can traditional workflow nodes. AI workflow nodes can run parallelly, and so can traditional workflow nodes. AI workflow nodes can run conditionally, and so can traditional workflow nodes.
+AI workflows have pipelines, and so do traditional workflows. AI workflow nodes can retry, and so can traditional workflow nodes. AI workflow nodes can run in parallel, and so can traditional workflow nodes. AI workflow nodes can run conditionally, and so can traditional workflow nodes.
 
 Popular AI workflow orchestrators (e.g. LangChain) unify the APIs of all kinds of model suppliers. But in terms of orchestration, they are no different from traditional orchestrators.
 
@@ -69,7 +69,7 @@ export const solution: string = await f('what does 1+1 equal to?');
 ### Stateful Nodes
 
 ```ts
-import { Controlflow } from '@zimtsui/amenda';
+import { Controlflow, Rejected } from '@zimtsui/amenda';
 import { writeFile } from 'fs/promises';
 import { Console } from 'node:console';
 import OpenAI from 'openai';
@@ -131,30 +131,6 @@ const solution: string = await cf.callback('1+1 等于几？');
 
 ```
 
-Or
-
-```ts
-import { Rejected, Controlflow } from '@zimtsui/amenda';
-
-declare const determineLanguage: (text: string) => Promise<'Chinese' | 'Russian' | 'English'>;
-declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Rejected>;
-declare const translateRussianToEnglish: (russianText: string) => AsyncGenerator<string, never, Rejected>;
-declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGenerator<string, never, Rejected>;
-
-const cf = Controlflow
-	.pipeaf(async function translate(mathProblem: string): Promise<string> {
-		switch (await determineLanguage(mathProblem)) {
-			case 'Chinese': return await Controlflow.append(translateChineseToEnglish).callback(mathProblem); break;
-			case 'Russian': return await Controlflow.append(translateRussianToEnglish).callback(mathProblem); break;
-			case 'English': return mathProblem; break;
-			default: throw new Rejected('Unsupported language'); break;
-		}
-	}).pipe(solveEnglishMathProblem);
-
-const solution: string = await cf.callback('1+1 等于几？');
-
-```
-
 ### [Design Pattern of Optimizer Evaluator](https://www.anthropic.com/engineering/building-effective-agents)
 
 ```ts
@@ -195,8 +171,8 @@ declare const translateChineseToRussian: (chineseText: string) => AsyncGenerator
 const cf = Controlflow
 	.pipeaf(async (chinese: string) => {
 		const [english, russian] = await Promise.all([
-			Controlflow.append(translateChineseToEnglish).callback(chinese),
-			Controlflow.append(translateChineseToRussian).callback(chinese),
+			Controlflow.pipeaf(translateChineseToEnglish).callback(chinese),
+			Controlflow.pipeaf(translateChineseToRussian).callback(chinese),
 		]);
 		return `# Chinese: ${chinese}\n\n# English: ${english}\n\n# Russian: ${russian}`;
 	});
