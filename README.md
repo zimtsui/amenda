@@ -36,6 +36,8 @@ async function *solveMathProblem(mathProblem: string): AsyncGenerator<string, ne
 	for (;;) {
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 		messages.push({ role: 'assistant', content: completion.choices[0].message.content });
+		if (completion.choices[0].message.tool_calls[0]?.name === 'problemTooHard')
+			throw new Rejected(completion.choices[0].message.tool_calls[0].arguments.reason);
 		const feedback: Rejected = yield completion.choices[0].message.content;
 		messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${feedback.message}` });
 	}
@@ -48,8 +50,6 @@ A `Controlflow` is the orchestrator of a workflow, which compose workflows into 
 
 ```ts
 import { Controlflow } from '@zimtsui/amenda';
-import { writeFile } from 'fs/promises';
-import { Console } from 'node:console';
 
 declare const translateEnglishToChinese: (englishText: string) => AsyncGenerator<string, never, Rejected>;
 declare const solveChineseMathProblem: (chineseMathProblem: string) => AsyncGenerator<string, never, Rejected>;
@@ -58,51 +58,28 @@ declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator
 const cf = Controlflow
 	.pipesf((text: string) => text.trimStart())	// append a sync function
 	.pipeaf(async (text: string) => text.trimEnd())	// append an async function
-	.pipe(translateEnglishToChinese)	// append a workflow
-	.pipe(solveChineseMathProblem)
-	.pipe(translateChineseToEnglish);
+	.pipegf(translateEnglishToChinese)	// append a generator function
+	.pipegf(solveChineseMathProblem)
+	.pipegf(translateChineseToEnglish);
 
-const f = cf.callback({ console: new Console() });
-export const solution: string = await f('what does 1+1 equal to?');
+export default await cf.callback('what does 1+1 equal to?');
 ```
 
 ### Stateful Nodes
 
 ```ts
-import { Controlflow, Rejected } from '@zimtsui/amenda';
-import { writeFile } from 'fs/promises';
-import { Console } from 'node:console';
-import OpenAI from 'openai';
-import { v4 as makeUuid } from 'uuid';
-
-declare const openai: OpenAI;
-
-async function *solveMathProblem(mathProblem: string, state: { console: Console, executionId: string }): AsyncGenerator<string, never, Rejected> {
-	const messages = [
-		{ role: 'system', content: 'Please solve a math problem for the user.' },
-		{ role: 'user', content: `${mathProblem}` },
-	];
-	for (;;) {
-		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		state.console.error(`Execution ${state.executionId}:\n${completion.usage}`);
-		if (completion.choices[0].message.tool_calls[0]?.name === 'problemTooHard')
-			throw new Rejected(completion.choices[0].message.tool_calls[0].arguments.reason);
-		messages.push({ role: 'assistant', content: completion.choices[0].message.content });
-		const feedback: Rejected = yield [completion.choices[0].message.content, state];	// [output, state]
-		messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${feedback.message}` });
-	}
-}
+import { Controlflow } from '@zimtsui/amenda';
 
 const cf = Controlflow
-	.thensf((mathProblem: string, state: { console: Console }) => [mathProblem, { ...state, executionId: makeUuid() }])	// append a stateful sync function
-	.then(solveMathProblem)	// append a stateful generator function
-	.pipeaf(async (solution: string) => {	// append a stateless async function
-		await writeFile('solution.txt', solution);
-		return solution;
-	});
+	.pipesf((x: null, state: void) => [x, { a: 1 }])	// stateful functions returns/yields a tuple of output and a new state
+	.thengf(async function *(x: null, state) {	// append a stateful generator function
+		throw yield [x, { ...state, b: 2 }];
+	})
+	.thenaf(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
+	.thensf((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])	// append a stateful sync function
+	.pipesf((x: null, state) => state.s);
 
-const f = cf.callback({ console: new Console() });
-export const solution: string = await f('what does 1+1 equal to?');
+export default await cf.callback(null);	// 6
 ```
 
 ## Best Practices
@@ -118,16 +95,16 @@ declare const translateRussianToEnglish: (russianText: string) => AsyncGenerator
 declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
-	.pipe(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
+	.pipegf(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': throw yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': throw yield *translateRussianToEnglish(mathProblem); break;
 			case 'English': throw yield mathProblem; break;
 			default: throw new Rejected('Unsupported language'); break;
 		}
-	}).pipe(solveEnglishMathProblem);
+	}).pipegf(solveEnglishMathProblem);
 
-const solution: string = await cf.callback('1+1 等于几？');
+export default await cf.callback('1+1 等于几？');
 
 ```
 
@@ -154,10 +131,10 @@ async function *evaluator(solutions: AsyncGenerator<string, never, Rejected>): A
 }
 
 const cf = Controlflow
-	.pipe(solveMathProblem)
+	.pipegf(solveMathProblem)
 	.by(evaluator);	// append an evaluator
 
-const solution: string = await cf.callback('What does 1+1 equal to?');
+export default await cf.callback('What does 1+1 equal to?');
 ```
 
 ### Parallel
@@ -177,7 +154,7 @@ const cf = Controlflow
 		return `# Chinese: ${chinese}\n\n# English: ${english}\n\n# Russian: ${russian}`;
 	});
 
-const solution: string = await cf.callback('1+1 等于几？');
+export default await cf.callback('1+1 等于几？');
 ```
 
 ## [Explanation of Amenda in Mathematics](./explanation.md)
