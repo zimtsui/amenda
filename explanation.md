@@ -34,17 +34,15 @@ export type Draft<t> = AsyncGenerator<t, never, Rejected>;
 	`Draft.to` 是从 `Draft` 函子到 `Promise` 函子的自然变换。
 
 ```ts
-export namespace Draft {
-	export declare function eta<t>(x: t): Draft<t>;
-	export declare function mu<t>(x: Draft<Draft<t>>): Draft<t>;
-	export declare function from<t>(x: Promise<t>): Draft<t>;
-	export declare function to<t>(x: Draft<t>): Promise<t>;
-}
+export declare function eta<t>(x: t): Draft<t>;
+export declare function mu<t>(x: Draft<Draft<t>>): Draft<t>;
+export declare function from<t>(x: Promise<t>): Draft<t>;
+export declare function to<t>(x: Draft<t>): Promise<t>;
 ```
 
 ## Stateful Value
 
-A stateful value is tuple of a value and a state.
+A stateful value is a tuple of a value and a state.
 
 一个有状态的值是值和状态的构成的元组。
 
@@ -59,10 +57,8 @@ A `Workflow` is a morphism in the Kleisli category of the draft monad.
 一个 `Workflow` 是草稿单子 Kleisli 范畴的态射。
 
 ```ts
-export namespace Draft {
-	export type Kleisli<input, output> = (input: input) => Draft<output>;
-}
-export type Workflow<i, o, istate, ostate> = Draft.Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
+export type Kleisli<input, output> = (input: input) => Draft<output>;
+export type Workflow<i, o, istate, ostate> = Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
 ```
 
 ## Morphisms of Draft Category 草稿范畴的态射

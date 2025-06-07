@@ -95,7 +95,7 @@ async function *solveMathProblem(mathProblem: string, state: { console: Console,
 
 const cf = Controlflow
 	.thensf((mathProblem: string, state: { console: Console }) => [mathProblem, { ...state, executionId: makeUuid() }])	// append a stateful sync function
-	.then(solveMathProblem)	// append a stateful node
+	.then(solveMathProblem)	// append a stateful generator function
 	.pipeaf(async (solution: string) => {	// append a stateless async function
 		await writeFile('solution.txt', solution);
 		return solution;
