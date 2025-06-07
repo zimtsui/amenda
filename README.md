@@ -16,7 +16,7 @@ The answer is about the retry mechanism. In traditional workflows, if a node fai
 
 ### Workflow Node
 
-A node in a AI workflow can be represented as a function which returns an async generator which yields values to the caller. If the node is not satisfied with the input, a `Rejected` value can be thrown back to the caller.
+A node in a AI workflow can be represented as an async generator function which yields values to the caller. If the node is not satisfied with the input, a `Rejected` value can be thrown back to the caller.
 
 If the caller is not satisfied with the yielded value, a `Rejected` value as feedback can be `next`ed back into the node and wait for the next revised yield. If the caller is satisfied with the value, a `Finalized` value should be thrown back into the node to inform the node of the termination.
 
