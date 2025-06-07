@@ -10,6 +10,11 @@ In analogy to the functor `Promise`, which maps from the category of present val
 
 `Promise` 函子从现值范畴映射到期值范畴，类比地，`Draft` 函子从终稿范畴映射到草稿范畴。
 
+```ts
+export class Rejected extends Error {}
+export type Draft<t> = AsyncGenerator<t, never, Rejected>;
+```
+
 ## Natural Transformations of Draft Functor 草稿函子的自然变换
 
 -	`Draft.eta` is a natural transformation from the identity functor to the functor `Draft`.
@@ -28,22 +33,44 @@ In analogy to the functor `Promise`, which maps from the category of present val
 
 	`Draft.to` 是从 `Draft` 函子到 `Promise` 函子的自然变换。
 
-## Kleisli Category of Draft Monad 草稿单子的 Kleisli 范畴
+```ts
+export namespace Draft {
+	export declare function eta<t>(x: t): Draft<t>;
+	export declare function mu<t>(x: Draft<Draft<t>>): Draft<t>;
+	export declare function from<t>(x: Promise<t>): Draft<t>;
+	export declare function to<t>(x: Draft<t>): Promise<t>;
+}
+```
 
-A `Workflow<input, output>` is a morphism in the Kleisli category of the draft monad.
+## Stateful Value
 
-一个 `Workflow<input, output>` 是草稿单子 Kleisli 范畴的态射。
+A stateful value is tuple of a value and a state.
+
+一个有状态的值是值和状态的构成的元组。
 
 ```ts
-type Workflow<input, output> = (input: input) => Draft<output>;
+export type StatefulValue<value, state> = [value, state];
+```
+
+## Kleisli Category of Draft Monad 草稿单子的 Kleisli 范畴
+
+A `Workflow` is a morphism in the Kleisli category of the draft monad.
+
+一个 `Workflow` 是草稿单子 Kleisli 范畴的态射。
+
+```ts
+export namespace Draft {
+	export type Kleisli<input, output> = (input: input) => Draft<output>;
+}
+export type Workflow<i, o, istate = void, ostate = istate> = Draft.Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
 ```
 
 ## Morphisms of Draft Category 草稿范畴的态射
 
-A `Evaluator<input, output>` is a morphism in the Draft Category.
+An evaluator in the design pattern of optimizer evaluator is a morphism in the Draft Category.
 
-一个 `Evaluator<input, output>` 是草稿范畴的态射。
+优化评估设计模式中的评估器是草稿范畴的态射。
 
 ```ts
-type Evaluator<input, output> = (draft: Draft<input>) => Draft<output>;
+type Evaluator<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
 ```

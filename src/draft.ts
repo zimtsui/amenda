@@ -26,10 +26,8 @@ export namespace Draft {
 		}
 	}
 
-	/**
-	 * Morphism in Draft Category
-	 */
 	export type Morphism<i, o> = (draft: Draft<i>) => Draft<o>;
+	export type Kleisli<i, o> = (i: i) => Draft<o>;
 
 
 	/**
