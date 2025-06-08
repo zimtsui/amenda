@@ -68,5 +68,5 @@ An evaluator in the design pattern of optimizer evaluator is a morphism in the d
 优化评估设计模式中的评估器是草稿范畴的态射。
 
 ```ts
-export type IterationFunction<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
+export type IterationFunction<i, o, istate, ostate> = Morphism<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
 ```
