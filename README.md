@@ -54,28 +54,30 @@ declare const solveChineseMathProblem: (chineseMathProblem: string) => AsyncGene
 declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
-	.pipesf((text: string) => text.trimStart())	// append a sync function
-	.pipeaf(async (text: string) => text.trimEnd())	// append an async function
-	.pipe(translateEnglishToChinese)	// append an async generator function
-	.pipe(solveChineseMathProblem)
-	.pipe(translateChineseToEnglish);
+	.map((text: string) => text.trimStart())	// append a sync function
+	.transform(async (text: string) => text.trimEnd())	// append an async function
+	.then(translateEnglishToChinese)	// append an async generator function
+	.then(solveChineseMathProblem)
+	.then(translateChineseToEnglish);
 
 export default await cf.callback('what does 1+1 equal to?');
 ```
 
 ### Stateful Nodes
 
+A stateful node should return a tuple of output and a new state.
+
 ```ts
 import { Controlflow } from '@zimtsui/amenda';
 
 const cf = Controlflow
-	.pipesf((x: null, state: void) => [x, { a: 1 }])	// stateful functions returns/yields a tuple of output and a new state
-	.then(async function *(x: null, state) {	// append a stateful async generator function
+	.smap((x: null, state: void) => [x, { a: 1 }])	// append a stateful sync function
+	.sthen(async function *(x: null, state) {	// append a stateful async generator function
 		throw yield [x, { ...state, b: 2 }];
 	})
-	.thenaf(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
-	.thenf((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])	// append a stateful sync function
-	.pipesf((x: null, state) => state.s);
+	.stransform(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
+	.smap((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])
+	.map((x: null, state) => state.s);
 
 export default await cf.callback(null);	// 6
 ```
@@ -93,14 +95,14 @@ declare const translateRussianToEnglish: (russianText: string) => AsyncGenerator
 declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
-	.pipe(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
+	.then(async function *(mathProblem: string): AsyncGenerator<string, never, Rejected> {
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': throw yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': throw yield *translateRussianToEnglish(mathProblem); break;
 			case 'English': throw yield mathProblem; break;
 			default: throw new Rejected('Unsupported language'); break;
 		}
-	}).pipe(solveEnglishMathProblem);
+	}).then(solveEnglishMathProblem);
 
 export default await cf.callback('1+1 等于几？');
 
@@ -120,13 +122,14 @@ async function *evaluator(codes: AsyncGenerator<string, never, Rejected>): Async
 		throw yield r.value;
 	} catch (e) {
 		if (e instanceof SyntaxError) r = await codes.next(new Rejected(e.message));
-		else throw await codes.throw(e).then(() => e);
+		else if (e instanceof Rejected) r = await codes.next(e);
+		else throw e;
 	}
 }
 
 const cf = Controlflow
-	.pipe(generateCode)
-	.by(evaluator);	// append an evaluator
+	.then(generateCode)
+	.pipe(evaluator);	// append an evaluator
 
 export default await cf.callback();
 ```
@@ -140,10 +143,10 @@ declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator
 declare const translateChineseToRussian: (chineseText: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
-	.pipeaf(async (chinese: string) => {
+	.transform(async (chinese: string) => {
 		const [english, russian] = await Promise.all([
-			Controlflow.pipeaf(translateChineseToEnglish).callback(chinese),
-			Controlflow.pipeaf(translateChineseToRussian).callback(chinese),
+			Controlflow.then(translateChineseToEnglish).callback(chinese),
+			Controlflow.then(translateChineseToRussian).callback(chinese),
 		]);
 		return `# Chinese: ${chinese}\n\n# English: ${english}\n\n# Russian: ${russian}`;
 	});

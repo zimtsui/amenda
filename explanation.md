@@ -17,21 +17,21 @@ export type Draft<t> = AsyncGenerator<t, never, Rejected>;
 
 ## Natural Transformations of Draft Functor 草稿函子的自然变换
 
--	`Draft.eta` is a natural transformation from the identity functor to the functor `Draft`.
+-	`eta` is a natural transformation from the identity functor to the functor `Draft`.
 
-	`Draft.eta` 是从恒等函子到 `Draft` 函子的自然变换。
+	`eta` 是从恒等函子到 `Draft` 函子的自然变换。
 
--	`Draft.mu` is a natural transformation from the functor `Draft`$^2$ to the functor `Draft`.
+-	`mu` is a natural transformation from the functor `Draft`$^2$ to the functor `Draft`.
 
-	`Draft.mu` 是从 `Draft`$^2$ 函子到 `Draft` 函子的自然变换。
+	`mu` 是从 `Draft`$^2$ 函子到 `Draft` 函子的自然变换。
 
--	`Draft.from` is a natural transformation from the functor `Promise` to the functor `Draft`.
+-	`from` is a natural transformation from the functor `Promise` to the functor `Draft`.
 
-	`Draft.from` 是从 `Promise` 函子到 `Draft` 函子的自然变换。
+	`from` 是从 `Promise` 函子到 `Draft` 函子的自然变换。
 
--	`Draft.to` is a natural transformation from the functor `Draft` to the functor `Promise`.
+-	`to` is a natural transformation from the functor `Draft` to the functor `Promise`.
 
-	`Draft.to` 是从 `Draft` 函子到 `Promise` 函子的自然变换。
+	`to` 是从 `Draft` 函子到 `Promise` 函子的自然变换。
 
 ```ts
 export declare function eta<t>(x: t): Draft<t>;
@@ -68,5 +68,5 @@ An evaluator in the design pattern of optimizer evaluator is a morphism in the d
 优化评估设计模式中的评估器是草稿范畴的态射。
 
 ```ts
-export type EvaluatorFunction<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
+export type IterationFunction<i, o, istate, ostate> = (draft: Draft<StatefulValue<i, istate>>) => Draft<StatefulValue<o, ostate>>;
 ```
