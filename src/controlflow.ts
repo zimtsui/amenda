@@ -30,6 +30,13 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	public append<nexto, nextos>(cf: Controlflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.pipe(cf.workflow);
 	}
+	/**
+	 * Appends a Controlflow
+	 * @returns A new Controlflow instance
+	 */
+	public static append<i = void, o = void, is = void, os = void>(cf: Controlflow<i, o, is, os>): Controlflow<i, o, is, os> {
+		return cf;
+	}
 
 	/**
 	 * Appends a stateful async generator function to the workflow
