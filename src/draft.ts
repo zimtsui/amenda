@@ -26,11 +26,8 @@ export namespace Draft {
 		}
 	}
 
-	export type Kleisli<i, o> = (i: i) => Draft<o>;
-
-
 	/**
-	 * Map morphisms to Draft Category
+	 * Map a morphism to Draft Category
 	 */
 	export function map<i, o>(f: (i: i) => o): (draft: Draft<i>) => Draft<o> {
 		return async function *morphism(draft: Draft<i>) {
