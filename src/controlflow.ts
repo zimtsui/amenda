@@ -16,6 +16,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
+	 * Appends a Controlflow
+	 * @returns A new Controlflow instance
+	 */
+	public append<nexto, nextos>(cf: Controlflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
+		return this.use(cf.workflow);
+	}
+
+	/**
 	 * Appends a stateful async generator function to the workflow
 	 * @returns A new Controlflow instance
 	 */

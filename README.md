@@ -50,14 +50,14 @@ A `Controlflow` is the orchestrator of a workflow, which compose workflows into 
 import { Controlflow } from '@zimtsui/amenda';
 
 declare const translateEnglishToChinese: (englishText: string) => AsyncGenerator<string, never, Rejected>;
-declare const solveChineseMathProblem: (chineseMathProblem: string) => AsyncGenerator<string, never, Rejected>;
+declare const solveChineseMathProblem: Controlflow<string, string>;
 declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Rejected>;
 
 const cf = Controlflow
 	.map((text: string) => text.trimStart())	// append a sync function
 	.transform(async (text: string) => text.trimEnd())	// append an async function
 	.then(translateEnglishToChinese)	// append an async generator function
-	.then(solveChineseMathProblem)
+	.append(solveChineseMathProblem)	// append another Controlflow
 	.then(translateChineseToEnglish);
 
 export default await cf.callback('what does 1+1 equal to?');
