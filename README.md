@@ -116,9 +116,9 @@ import { Rejected, Controlflow } from '@zimtsui/amenda';
 declare async function *generateCode(): AsyncGenerator<string, never, Rejected>;
 declare function syntaxCheck(code: string): void;
 
-async function *evaluator(codes: AsyncGenerator<string, never, Rejected>): AsyncGenerator<string, never, Rejected> {
+async function *evaluator(codes: AsyncGenerator<[string, state: void], never, Rejected>): AsyncGenerator<[string, state: void], never, Rejected> {
 	for (let r = await codes.next();;) try {
-		syntaxCheck(r.value);
+		syntaxCheck(r.value[0]);
 		throw yield r.value;
 	} catch (e) {
 		if (e instanceof SyntaxError) r = await codes.next(new Rejected(e.message));
