@@ -116,13 +116,13 @@ import { Rejected, Controlflow } from '@zimtsui/amenda';
 declare async function *generateCode(): AsyncGenerator<string, never, Rejected>;
 declare function syntaxCheck(code: string): void;
 
-async function *evaluator(codes: AsyncGenerator<[string, state: void], never, Rejected>): AsyncGenerator<[string, state: void], never, Rejected> {
-	for (let r = await codes.next();;) try {
+async function *evaluator(optimization: AsyncGenerator<[string, state: void], never, Rejected>): AsyncGenerator<[string, state: void], never, Rejected> {
+	for (let r = await optimization.next();;) try {
 		syntaxCheck(r.value[0]);
 		throw yield r.value;
 	} catch (e) {
-		if (e instanceof SyntaxError) r = await codes.next(new Rejected(e.message));
-		else if (e instanceof Rejected) r = await codes.next(e);
+		if (e instanceof SyntaxError) r = await optimization.next(new Rejected(e.message));
+		else if (e instanceof Rejected) r = await optimization.next(e);
 		else throw e;
 	}
 }
