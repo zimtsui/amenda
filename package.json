@@ -1,7 +1,7 @@
 {
   "name": "@zimtsui/amenda",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "exports": "./build/exports.js",
   "type": "module",
   "repository": {

@@ -2,15 +2,15 @@
 
 [![Npm package version](https://img.shields.io/npm/v/@zimtsui/amenda?style=flat-square)](https://www.npmjs.com/package/@zimtsui/amenda)
 
-Amenda is another AI workflow orchestrator, which leverages the most native power of TypeScript.
+Amenda is another AI workflow orchestrator powered by the most native capabilities of TypeScript.
 
 ## Rationale
 
-Traditional workflows have almost everything that AI workflows have, for example, pipelines, parallelism, conditionals, retries, etc. Popular AI workflow frameworks (e.g. LangChain) unify the APIs of various model suppliers. But in terms of orchestration, they are no different from traditional orchestrators.
+Traditional workflows have almost every capability that AI workflows have, e.g. pipeline, parallelism, conditional, retry, etc. Popular AI workflow frameworks, e.g. LangChain, unify the APIs of various model suppliers. But in terms of orchestration, they are no different from traditional orchestrators.
 
 So what is the key difference between AI workflows and traditional workflows in terms of orchestration? Is there anything that traditional orchestrators cannot do in AI workflows?
 
-The answer is about the retry mechanism. In traditional workflows, if a node fails, or if the output of a node is rejected by the downstream, the node should typically retry by repeating the exact same operation with the same accuracy as the last attempt. While in AI workflows, when a stateful AI node should retry, it revises its former output.
+The answer is about the retry mechanism. In traditional workflows, if a node fails, or if the output of a node is rejected by the downstream, the node should typically retry by repeating the exact same operation with the same accuracy as the last attempt. While in AI workflows, when a stateful AI node should retry, it revises its former output with a much higher accuracy than the last attempt.
 
 ## Concept
 
@@ -18,7 +18,7 @@ The answer is about the retry mechanism. In traditional workflows, if a node fai
 
 A node in a AI workflow can be represented as an async generator function which yields values to the caller. If the node is not satisfied with the input, a `Rejected` value can be thrown back to the caller.
 
-If the caller is not satisfied with the yielded value, a `Rejected` value as feedback can be `next`ed back into the node and wait for the next revised yield. If the caller is satisfied with the value, a `Finalized` value should be thrown back into the node to inform the node of the termination.
+If the caller is not satisfied with the yielded value, it can send a `Rejected` back into the node via the `next` method and wait for the next revised yield. If the caller is satisfied with the yielded value, it can throw a `Finalized` into the node to inform it of the termination.
 
 ```ts
 import { Rejected } from '@zimtsui/amenda';
@@ -44,7 +44,7 @@ async function *solveMathProblem(mathProblem: string): AsyncGenerator<string, ne
 
 ### Controlflow
 
-A `Controlflow` is the orchestrator of a workflow, which compose workflows into a new workflow.
+A `Controlflow` is the orchestrator of workflow, which composes workflow nodes.
 
 ```ts
 import { Controlflow } from '@zimtsui/amenda';
