@@ -40,33 +40,34 @@ export declare function from<t>(x: Promise<t>): Draft<t>;
 export declare function to<t>(x: Draft<t>): Promise<t>;
 ```
 
-## Stateful Value
+## Morphisms of Draft Category 草稿范畴的态射
 
-A stateful value is a tuple of a value and a state.
+A stateful value is a tuple of a value and a state. An `Amenda` is an object in the draft category mapped from a stateful value by the draft functor. A `Workflow` is a morphism between `Amenda` objects.
 
-一个有状态的值是值和状态的构成的元组。
+一个有状态值是值和状态的构成的元组。一个 `Amenda` 是有状态值经草稿函子映射而成的草稿范畴中的物件。一个 `Workflow` 是 `Amenda` 之间的态射。
 
 ```ts
 export type StatefulValue<value, state> = [value, state];
+export type Amenda<value, state> = Draft<StatefulValue<value, state>>;
+export type Workflow<i, o, istate, ostate> = (amenda: Amenda<i, istate>) => Amenda<o, ostate>;
+```
+
+An evaluator in the design pattern of Optimizer Evaluator is a `Workflow`.
+
+优化评估设计模式中的评估器是一个 `Workflow`。
+
+```ts
+export type Evaluator<i, o, istate, ostate> = (optimization: Amenda<i, istate>) => Amenda<o, ostate>;
 ```
 
 ## Kleisli Category of Draft Monad 草稿单子的 Kleisli 范畴
 
-A `Workflow` is a morphism in the Kleisli category of the draft monad.
+A workflow node is represented as a curried morphism between stateful values of the Kleisli category of Draft monad.
 
-一个 `Workflow` 是草稿单子 Kleisli 范畴的态射。
-
-```ts
-export type Kleisli<input, output> = (input: input) => Draft<output>;
-export type Workflow<i, o, istate, ostate> = Kleisli<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
-```
-
-## Morphisms of Draft Category 草稿范畴的态射
-
-An evaluator in the design pattern of optimizer evaluator is a morphism in the draft category.
-
-优化评估设计模式中的评估器是草稿范畴的态射。
+一个工作流节点可以表示为草稿单子的 Kleisli 范畴中有状态值之间的态射。
 
 ```ts
-export type IterationFunction<i, o, istate, ostate> = Morphism<StatefulValue<i, istate>, StatefulValue<o, ostate>>;
+export type StatefulAsyncGeneratorFunction<i, o, istate, ostate> = ([i, istate]: StatefulValue<i, istate>) => Amenda<o, ostate>;
+// or
+export type StatefulAsyncGeneratorFunction<i, o, istate, ostate> = (i: i, istate: istate) => Amenda<o, ostate>;
 ```
