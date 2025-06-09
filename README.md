@@ -10,7 +10,7 @@ Traditional workflows have almost every capability that AI workflows have, e.g. 
 
 So what is the key difference between AI workflows and traditional workflows in terms of orchestration? Is there anything that traditional orchestrators cannot do in AI workflows?
 
-The answer is about the retry mechanism. In traditional workflows, if a node fails, or if the output of a node is rejected by the downstream, the node should typically retry by repeating the exact same operation with the same accuracy as the last attempt. While in AI workflows, when a stateful AI node should retry, it revises its former output with a much higher accuracy than the last attempt.
+The answer is about the mechanism of retry. In traditional workflows, if a node fails, or if the output of a node is rejected by the downstream, the node should typically retry by repeating the exact same operation with the same accuracy as the last attempt. While in AI workflows, when a stateful AI node should retry, it revises its former output with a much higher accuracy than the last attempt.
 
 ## Concept
 
