@@ -1,6 +1,5 @@
 import { Draft } from './draft.ts';
-import { Workflow } from "./workflow.ts";
-
+import { Workflow } from './workflow.ts';
 
 
 export class Controlflow<i = void, o = void, is = void, os = void> {
@@ -9,14 +8,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	public callback = (i: i, is: is): Promise<o> => Draft.to(this.workflow(Draft.eta([i, is]))).then(([o]) => o);
 
 	/**
-	 * Appends an evaluator function to the workflow
+	 * Appends a workflow
 	 * @returns A new Controlflow instance
 	 */
 	public pipe<nexto, nextos>(f: Workflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return new Controlflow(amenda => f(this.workflow(amenda)));
 	}
 	/**
-	 * Appends an evaluator function to the workflow
+	 * Appends a workflow
 	 * @returns A new Controlflow instance
 	 */
 	public static pipe<i = void, o = void, is = void, os = void>(f: Workflow<i, o, is, os>): Controlflow<i, o, is, os> {
@@ -39,14 +38,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
-	 * Appends a stateful async generator function to the workflow
+	 * Appends a stateful async generator function
 	 * @returns A new Controlflow instance
 	 */
 	public sthen<nexto, nextos>(f: Workflow.StatefulAsyncGeneratorFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.pipe(Workflow.sthen(f));
 	}
 	/**
-	 * Appends a stateful async generator function to the workflow
+	 * Appends a stateful async generator function
 	 * @returns A new Controlflow instance
 	 */
 	public static sthen<i = void, o = void, is = void, os = void>(f: Workflow.StatefulAsyncGeneratorFunction<i, o, is, os>): Controlflow<i, o, is, os> {
@@ -54,14 +53,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
-	 * Appends a stateful async function to the workflow
+	 * Appends a stateful async function
 	 * @returns A new Controlflow instance
 	 */
 	public stransform<nexto, nextos>(f: Workflow.StatefulAsyncFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.pipe(Workflow.stransform(f));
 	}
 	/**
-	 * Appends a stateful async function to the workflow
+	 * Appends a stateful async function
 	 * @returns A new Controlflow instance
 	 */
 	public static stransform<i = void, o = void, is = void, os = void>(f: Workflow.StatefulAsyncFunction<i, o, is, os>): Controlflow<i, o, is, os> {
@@ -69,14 +68,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
-	 * Appends a stateful sync function to the workflow
+	 * Appends a stateful sync function
 	 * @returns A new Controlflow instance
 	 */
 	public smap<nexto, nextos>(f: Workflow.StatefulSyncFunction<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.pipe(Workflow.smap(f));
 	}
 	/**
-	 * Appends a stateful sync function to the workflow
+	 * Appends a stateful sync function
 	 * @returns A new Controlflow instance
 	 */
 	public static smap<i = void, o = void, is = void, os = void>(f: Workflow.StatefulSyncFunction<i, o, is, os>): Controlflow<i, o, is, os> {
@@ -85,14 +84,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 
 
 	/**
-	 * Appends a stateless generator function to the workflow
+	 * Appends a stateless generator function
 	 * @returns A new Controlflow instance
 	 */
 	public then<nexto>(f: Workflow.StatelessAsyncGeneratorFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
 		return this.pipe(Workflow.then(f));
 	}
 	/**
-	 * Appends a stateless generator function to the workflow
+	 * Appends a stateless generator function
 	 * @returns A new Controlflow instance
 	 */
 	public static then<i = void, o = void, is = void>(f: Workflow.StatelessAsyncGeneratorFunction<i, o, is>): Controlflow<i, o, is, is> {
@@ -100,14 +99,14 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
-	 * Appends a stateless async generator function to the workflow
+	 * Appends a stateless async function
 	 * @returns A new Controlflow instance
 	 */
 	public transform<nexto>(f: Workflow.StatelessAsyncFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
 		return this.pipe(Workflow.transform(f));
 	}
 	/**
-	 * Appends a stateless async generator function to the workflow
+	 * Appends a stateless async function
 	 * @returns A new Controlflow instance
 	 */
 	public static transform<i = void, o = void, is = void>(f: Workflow.StatelessAsyncFunction<i, o, is>): Controlflow<i, o, is, is> {
@@ -115,17 +114,77 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	}
 
 	/**
-	 * Appends a stateless sync function to the workflow
+	 * Appends a stateless sync function
 	 * @returns A new Controlflow instance
 	 */
 	public map<nexto>(f: Workflow.StatelessSyncFunction<o, nexto, os>): Controlflow<i, nexto, is, os> {
 		return this.pipe(Workflow.map(f));
 	}
 	/**
-	 * Appends a stateless sync function to the workflow
+	 * Appends a stateless sync function
 	 * @returns A new Controlflow instance
 	 */
 	public static map<i = void, o = void, is = void>(f: Workflow.StatelessSyncFunction<i, o, is>): Controlflow<i, o, is, is> {
 		return Controlflow.pipe(Workflow.map(f));
+	}
+
+	/**
+	 * Appends a disposable async generator function
+	 * @returns A new Controlflow instance
+	 */
+	public othen(f: Workflow.StatelessAsyncGeneratorFunction<o, o, os>): Controlflow<i, o, is, os> {
+		return this.pipe(Workflow.once(Workflow.then(f)));
+	}
+	/**
+	 * Appends a disposable async generator function
+	 * @returns A new Controlflow instance
+	 */
+	public static othen<i = void, is = void>(f: Workflow.StatelessAsyncGeneratorFunction<i, i, is>): Controlflow<i, i, is, is> {
+		return Controlflow.pipe(Workflow.once(Workflow.then(f)));
+	}
+
+	/**
+	 * Appends a disposable async function
+	 * @returns A new Controlflow instance
+	 */
+	public otransform(f: Workflow.StatelessAsyncFunction<o, o, os>): Controlflow<i, o, is, os> {
+		return this.pipe(Workflow.once(Workflow.transform(f)));
+	}
+	/**
+	 * Appends a disposable async function
+	 * @returns A new Controlflow instance
+	 */
+	public static otransform<i = void, is = void>(f: Workflow.StatelessAsyncFunction<i, i, is>): Controlflow<i, i, is, is> {
+		return Controlflow.pipe(Workflow.once(Workflow.transform(f)));
+	}
+
+	/**
+	 * Appends a disposable sync function
+	 * @returns A new Controlflow instance
+	 */
+	public omap(f: Workflow.StatelessSyncFunction<o, o, os>): Controlflow<i, o, is, os> {
+		return this.pipe(Workflow.once(Workflow.map(f)));
+	}
+	/**
+	 * Appends a disposable sync function
+	 * @returns A new Controlflow instance
+	 */
+	public static omap<i = void, is = void>(f: Workflow.StatelessSyncFunction<i, i, is>): Controlflow<i, i, is, is> {
+		return Controlflow.pipe(Workflow.once(Workflow.map(f)));
+	}
+
+	/**
+	 * Appends a disposable workflow
+	 * @returns A new Controlflow instance
+	 */
+	public opipe(f: Workflow<o, o, os, os>): Controlflow<i, o, is, os> {
+		return this.pipe(Workflow.once(f));
+	}
+	/**
+	 * Appends a disposable workflow
+	 * @returns A new Controlflow instance
+	 */
+	public static opipe<i = void, is = void>(f: Workflow<i, i, is, is>): Controlflow<i, i, is, is> {
+		return Controlflow.pipe(Workflow.once(f));
 	}
 }

@@ -1,5 +1,6 @@
 import { Draft } from './draft.ts';
 import { Rejected } from './exceptions.ts';
+import { resume } from './resume.ts';
 
 
 
@@ -30,6 +31,12 @@ export namespace Workflow {
 
 	export function map<i, o, is = void>(f: StatelessSyncFunction<i, o, is>): Workflow<i, o, is> {
 		return transform(async (i, is) => f(i, is));
+	}
+
+	export function once<i = void, is = void>(f: Workflow<i, i, is, is>): Workflow<i, i, is, is> {
+		return async function *(amenda) {
+			throw yield *resume(amenda, (await f(amenda).next()).value);
+		}
 	}
 
 	export type StatefulAsyncGeneratorFunction<i, o, is, os> = (i: i, is: is) => Amenda<o, os>;
