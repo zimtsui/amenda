@@ -33,12 +33,6 @@ export namespace Workflow {
 		return transform(async (i, is) => f(i, is));
 	}
 
-	export function once<i = void, is = void>(f: Workflow<i, i, is, is>): Workflow<i, i, is, is> {
-		return async function *(amenda) {
-			throw yield *resume(amenda, (await f(amenda).next()).value);
-		}
-	}
-
 	export type StatefulAsyncGeneratorFunction<i, o, is, os> = (i: i, is: is) => Amenda<o, os>;
 	export type StatefulAsyncFunction<i, o, is, os> = (i: i, is: is) => Promise<StatefulValue<o, os>>;
 	export type StatefulSyncFunction<i, o, is, os> = (i: i, is: is) => StatefulValue<o, os>;

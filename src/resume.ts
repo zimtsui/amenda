@@ -4,7 +4,6 @@ export async function *resume<TYield, TReturn, TNext>(it: AsyncGenerator<TYield,
 		while (!r.done) r = await it.next(yield r.value);
 		return r.value;
 	} catch (e) {
-		await it.throw(e);
-		throw e;
+		throw await it.throw(e).then(() => e);
 	}
 }
