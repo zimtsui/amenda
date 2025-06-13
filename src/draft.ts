@@ -19,7 +19,7 @@ export namespace Draft {
 	 */
 	export async function *mu<t>(draftdraft: Draft<Draft<t>>): Draft<t> {
 		for (let r = await draftdraft.next();;) try {
-			yield *r.value;
+			return yield *r.value;
 		} catch (e) {
 			if (e instanceof Rejected) r = await draftdraft.next(e);
 			else throw await draftdraft.throw(e).then(() => e);
