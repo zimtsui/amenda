@@ -1,10 +1,10 @@
-import { Finalized, Downstream, Upstream } from './exceptions.ts';
+import { Finalized, Downwards, Upwards } from './exceptions.ts';
 
 
 /**
  * Draft functor
  */
-export type Draft<t> = AsyncGenerator<t, never, Upstream>;
+export type Draft<t> = AsyncGenerator<t, never, Upwards>;
 export namespace Draft {
 
 	/**
@@ -24,15 +24,15 @@ export namespace Draft {
 				for (let p = draft.next();;) try {
 					p = draft.next(yield await p.then(r => r.value));
 				} catch (e) {
-					if (e instanceof Downstream) p = draft.next(yield Promise.reject(e));
+					if (e instanceof Downwards) p = draft.next(yield Promise.reject(e));
 					else throw await draft.throw(e).then(() => e);
 				}
 			} catch (e) {
-				if (e instanceof Upstream) pp = draftdraft.next(e);
+				if (e instanceof Upwards) pp = draftdraft.next(e);
 				else throw e;
 			}
 		} catch (e) {
-			if (e instanceof Downstream) pp = draftdraft.next(yield Promise.reject(e));
+			if (e instanceof Downwards) pp = draftdraft.next(yield Promise.reject(e));
 			else throw await draftdraft.throw(e).then(() => e);
 		}
 	}
@@ -41,17 +41,17 @@ export namespace Draft {
 	 * Map a morphism to Draft Category
 	 */
 	export function map<i, o>(f: (i: i) => o): (draft: Draft<i>) => Draft<o> {
-		return async function *morphism(draft: Draft<i>) {
+		return async function *(draft: Draft<i>) {
 			for (let p = draft.next();;) try {
 				const i = await p.then(r => r.value);
 				try {
 					p = draft.next(yield f(i as i));
 				} catch (e) {
-					if (e instanceof Upstream) p = draft.next(e);
+					if (e instanceof Upwards) p = draft.next(e);
 					else throw e;
 				}
 			} catch (e) {
-				if (e instanceof Downstream) p = draft.next(yield Promise.reject(e));
+				if (e instanceof Downwards) p = draft.next(yield Promise.reject(e));
 				else throw await draft.throw(e).then(() => e);
 			}
 		}
@@ -68,9 +68,12 @@ export namespace Draft {
 	 * Natural transformation from Draft to Promise
 	 */
 	export async function to<t>(draft: Draft<t>): Promise<t> {
-		const r = await draft.next();
-		await draft.throw(new Finalized()).catch(e => e instanceof Finalized ? Promise.resolve() : Promise.reject(e));
-		return Promise.resolve(r.value) as Promise<t>;
+		return await draft.next()
+			.then(r => r.value)
+			.finally(() => draft
+				.throw(new Finalized())
+				.catch(e => e instanceof Finalized ? Promise.resolve() : Promise.reject(e))
+			);
 	}
 
 }
