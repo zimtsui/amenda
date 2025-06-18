@@ -2,7 +2,9 @@
 
 [![Npm package version](https://img.shields.io/npm/v/@zimtsui/amenda?style=flat-square)](https://www.npmjs.com/package/@zimtsui/amenda)
 
-Amenda is another AI workflow orchestrator powered by the most native capabilities of TypeScript.
+Amenda is an AI workflow orchestrator powered by the most native capabilities of TypeScript.
+
+**You may have to be very familiar with TypeScript type system to read this document.**
 
 ## Rationale
 
@@ -31,11 +33,15 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 		{ role: 'user', content: problem },
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-	throw yield completion.choices[0].message.content;
+	// The `yield` will never return if the downstream accepts the yielded result.
+	yield completion.choices[0].message.content;
+	throw new Error();
 }
 ```
 
-If the downstream rejects the yielded result, the `.next` of the generator should be called with an `Upwards` error as feedback. In this case, the workflow should revise its output and yield a new version.
+If the downstream rejects the yielded result, the `.next` of the generator should be called with an `Upwards` as feedback. In this case, the workflow should revise its output and yield a new version.
+
+`Upwards` is a subtype of `Error`. It's intended to represent an error from downstream to upstream.
 
 ```ts
 import { Upwards } from '@zimtsui/amenda';
@@ -56,7 +62,7 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 }
 ```
 
-A workflow can reject the input by throwing an `Upwards` error to the upstream.
+A workflow can reject the input by throwing an `Upwards` to the upstream.
 
 ```ts
 import { Upwards } from '@zimtsui/amenda';
@@ -70,11 +76,14 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	if (completion.choices[0].message.tool_calls[0]?.name === 'fail') throw new Upwards('The problem is too hard.');
+	// The `throw` propagates the feedback from downstream to upstream.
 	throw yield completion.choices[0].message.content;
 }
 ```
 
 A workflow can also yield an `Downwards` to the downstream, for example, to reject the feedback.
+
+`Downwards` is a subtype of `Error`. It's intended to represent an error from upstream to downstream.
 
 ```ts
 import { Downwards, Upwards } from '@zimtsui/amenda';
@@ -88,7 +97,7 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	const feedback: Upwards = yield completion.choices[0].message.content;
-	throw yield new Downwards('My solution is correct, and your feedback is wrong.');
+	throw yield Promise.reject(new Downwards('My solution is correct, and your feedback is wrong.'));
 }
 ```
 

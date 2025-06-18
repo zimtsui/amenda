@@ -11,8 +11,8 @@ In analogy to the functor `Promise`, which maps from the category of present val
 `Promise` 函子从现值范畴映射到期值范畴，类比地，`Draft` 函子从终稿范畴映射到草稿范畴。
 
 ```ts
-export class Rejected extends Error {}
-export type Draft<t> = AsyncGenerator<t, never, Rejected>;
+export class Upwards extends Error {}
+export type Draft<t> = AsyncGenerator<t, never, Upwards>;
 ```
 
 ## Natural Transformations of Draft Functor 草稿函子的自然变换
@@ -62,12 +62,12 @@ export type Evaluator<i, o, istate, ostate> = (optimization: Amenda<i, istate>) 
 
 ## Kleisli Category of Draft Monad 草稿单子的 Kleisli 范畴
 
-A workflow node is represented as a curried morphism between stateful values of the Kleisli category of Draft monad.
+A async generator function which returns an `Amenda` is essentially a curried morphism between stateful values of the Kleisli category of draft monad.
 
-一个工作流节点可以表示为草稿单子的 Kleisli 范畴中有状态值之间的态射。
+一个返回 `Amenda` 的异步生成器函数本质上是一个草稿单子 Kleisli 范畴中有状态值之间的柯里化态射。
 
 ```ts
 export type StatefulAsyncGeneratorFunction<i, o, istate, ostate> = ([i, istate]: StatefulValue<i, istate>) => Amenda<o, ostate>;
-// or
+// Curried as
 export type StatefulAsyncGeneratorFunction<i, o, istate, ostate> = (i: i, istate: istate) => Amenda<o, ostate>;
 ```
