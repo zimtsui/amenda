@@ -16,7 +16,7 @@ The answer is about the mechanism of retry. In traditional workflows, if a node 
 
 ## Concept
 
-### Output of a Workflow
+### Workflow
 
 The output of a workflow can be represented as an async generator which yields the result value to the downstream.
 
@@ -41,7 +41,7 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 
 If the downstream rejects the yielded result, the `.next` of the generator should be called with an `Upwards` as feedback. In this case, the workflow should revise its output and yield a new version.
 
-`Upwards` is a subtype of `Error`. It's intended to represent an error from downstream to upstream.
+`Upwards` is a subtype of `Error`. It's intended to represent an error sent from downstream to upstream.
 
 ```ts
 import { Upwards } from '@zimtsui/amenda';
@@ -83,7 +83,7 @@ async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
 
 A workflow can also yield an `Downwards` to the downstream, for example, to reject the feedback.
 
-`Downwards` is a subtype of `Error`. It's intended to represent an error from upstream to downstream.
+`Downwards` is a subtype of `Error`. It's intended to represent an error sent from upstream to downstream.
 
 ```ts
 import { Downwards, Upwards } from '@zimtsui/amenda';
@@ -124,7 +124,7 @@ async function *review(solutions: AsyncGenerator<string, never, Upwards>): Async
 
 ### Controlflow
 
-A `Controlflow` is the orchestrator of workflows, which composes workflows.
+A `Controlflow` composes workflows.
 
 ```ts
 import { Controlflow } from '@zimtsui/amenda';
