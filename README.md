@@ -177,8 +177,8 @@ declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGene
 const cf = Controlflow
 	.then(async function *(mathProblem: string): AsyncGenerator<string, never, Upwards> {
 		switch (await determineLanguage(mathProblem)) {
-			case 'Chinese': yield *translateChineseToEnglish(mathProblem); break;
-			case 'Russian': yield *translateRussianToEnglish(mathProblem); break;
+			case 'Chinese': return yield *translateChineseToEnglish(mathProblem); break;
+			case 'Russian': return yield *translateRussianToEnglish(mathProblem); break;
 			case 'English': throw yield mathProblem; break;
 			default: throw new Upwards('Language Not Supported'); break;
 		}
