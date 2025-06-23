@@ -138,8 +138,8 @@ const cf = Controlflow
 	.transform(async (text: string) => text.trimEnd())	// append an async function
 	.then(translateEnglishToChinese)	// append an async generator function
 	.append(solveChineseMathProblem)	// append another Controlflow
-	.then(translateChineseToEnglish);
-
+	.then(translateChineseToEnglish)
+;
 export default await cf.callback('what does 1+1 equal to?');
 ```
 
@@ -157,8 +157,8 @@ const cf = Controlflow
 	})
 	.stransform(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
 	.smap((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])
-	.map((x: null, state) => state.s);
-
+	.map((x: null, state) => state.s)
+;
 export default await cf.callback(null);	// 6
 ```
 
@@ -182,8 +182,8 @@ const cf = Controlflow
 			case 'English': throw yield mathProblem; break;
 			default: throw new Upwards('Language Not Supported'); break;
 		}
-	}).then(solveEnglishMathProblem);
-
+	}).then(solveEnglishMathProblem)
+;
 export default await cf.callback('1+1 等于几？');
 ```
 
@@ -208,8 +208,8 @@ async function *evaluator(optimization: AsyncGenerator<[string, state: void], ne
 
 const cf = Controlflow
 	.then(generateCode)
-	.pipe(evaluator);	// append an evaluator
-
+	.pipe(evaluator)	// append an evaluator
+;
 export default await cf.callback();
 ```
 
@@ -229,7 +229,6 @@ const cf = Controlflow
 		]);
 		return `# Chinese: ${chinese}\n\n# English: ${english}\n\n# Russian: ${russian}`;
 	});
-
 export default await cf.callback('1+1 等于几？');
 ```
 
