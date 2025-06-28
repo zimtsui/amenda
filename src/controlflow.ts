@@ -3,9 +3,9 @@ import { Workflow } from './workflow.ts';
 
 
 export class Controlflow<i = void, o = void, is = void, os = void> {
-	private constructor(private workflow: Workflow<i, o, is, os>) {}
+	private constructor(private readonly workflow: Workflow<i, o, is, os>) {}
 
-	public callback = (i: i, is: is): Promise<o> => Draft.to(this.workflow(Draft.eta([i, is]))).then(([o]) => o);
+	public readonly callback = (i: i, is: is): Promise<o> => Draft.to(this.workflow(Draft.eta([i, is]))).then(([o]) => o);
 
 	/**
 	 * Appends a workflow
