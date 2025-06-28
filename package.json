@@ -2,7 +2,7 @@
   "name": "@zimtsui/amenda",
   "description": "An AI workflow orchestrator powered by the most native capabilities of TypeScript.",
   "keywords": ["ai", "workflow", "orchestrator", "typescript"],
-  "version": "0.0.3",
+  "version": "0.0.4",
   "exports": "./build/exports.js",
   "type": "module",
   "repository": {
