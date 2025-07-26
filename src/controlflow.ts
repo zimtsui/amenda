@@ -5,6 +5,10 @@ import { Workflow } from './workflow.ts';
 export class Controlflow<i = void, o = void, is = void, os = void> {
 	private constructor(private workflow: Workflow<i, o, is, os>) {}
 
+	public static create<i = void, is = void>() {
+		return Controlflow.map<i, i, is>(i => i);
+	}
+
 	public callback = (i: i, is: is): Promise<o> => Draft.to(this.workflow(Draft.eta([i, is]))).then(([o]) => o);
 
 	/**
