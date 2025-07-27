@@ -1,5 +1,5 @@
 import { Draft } from './draft.ts';
-import { Workflow, type Amenda } from './workflow.ts';
+import { Workflow, type Amenda } from './amenda.ts';
 
 
 export class Controlflow<i = void, o = void, is = void, os = void> {
@@ -16,15 +16,16 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	 * Appends a workflow
 	 * @returns A new Controlflow instance
 	 */
-	public pipe<nexto, nextos>(f: Workflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
-		return new Controlflow(amenda => f(this.wf(amenda)));
+	public pipe<nexto, nextos>(wf: Workflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
+		return new Controlflow(amenda => wf(this.wf(amenda)));
 	}
+
 	/**
 	 * Appends a workflow
 	 * @returns A new Controlflow instance
 	 */
-	public static pipe<i = void, o = void, is = void, os = void>(f: Workflow<i, o, is, os>): Controlflow<i, o, is, os> {
-		return new Controlflow(f);
+	public static pipe<i = void, o = void, is = void, os = void>(wf: Workflow<i, o, is, os>): Controlflow<i, o, is, os> {
+		return new Controlflow(wf);
 	}
 
 	/**
@@ -34,6 +35,7 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	public append<nexto, nextos>(cf: Controlflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
 		return this.pipe(cf.wf);
 	}
+
 	/**
 	 * Appends a Controlflow
 	 * @returns A new Controlflow instance
@@ -86,7 +88,6 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	public static smap<i = void, o = void, is = void, os = void>(f: Workflow.StatefulSyncFunction<i, o, is, os>): Controlflow<i, o, is, os> {
 		return Controlflow.pipe(Workflow.smap(f));
 	}
-
 
 	/**
 	 * Appends a stateless generator function
