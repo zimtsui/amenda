@@ -1,22 +1,23 @@
 import { Draft } from './draft.ts';
-import { Workflow } from './workflow.ts';
+import { Workflow, type Amenda } from './workflow.ts';
 
 
 export class Controlflow<i = void, o = void, is = void, os = void> {
-	private constructor(private workflow: Workflow<i, o, is, os>) {}
+	private constructor(public wf: Workflow<i, o, is, os>) {}
 
 	public static create<i = void, is = void>() {
 		return Controlflow.map<i, i, is>(i => i);
 	}
 
-	public callback = (i: i, is: is): Promise<o> => Draft.to(this.workflow(Draft.eta([i, is]))).then(([o]) => o);
+	public gen = (i: i, is: is): Amenda<o, os> => this.wf(Draft.eta([i, is]));
+	public fun = (i: i, is: is): Promise<o> => Draft.to(this.gen(i, is)).then(([o]) => o);
 
 	/**
 	 * Appends a workflow
 	 * @returns A new Controlflow instance
 	 */
 	public pipe<nexto, nextos>(f: Workflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
-		return new Controlflow(amenda => f(this.workflow(amenda)));
+		return new Controlflow(amenda => f(this.wf(amenda)));
 	}
 	/**
 	 * Appends a workflow
@@ -31,7 +32,7 @@ export class Controlflow<i = void, o = void, is = void, os = void> {
 	 * @returns A new Controlflow instance
 	 */
 	public append<nexto, nextos>(cf: Controlflow<o, nexto, os, nextos>): Controlflow<i, nexto, is, nextos> {
-		return this.pipe(cf.workflow);
+		return this.pipe(cf.wf);
 	}
 	/**
 	 * Appends a Controlflow

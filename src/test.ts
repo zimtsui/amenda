@@ -6,4 +6,4 @@ const cf = Controlflow
 	.map((i: string) => i.trimStart())
 	.transform(async (i: string) => i.trimEnd());
 
-console.log(await cf.callback());
+console.log(await cf.fun());
