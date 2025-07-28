@@ -1,7 +1,7 @@
 import { Controlflow } from './amenda.ts';
 
 
-const cf = Controlflow.from('  hello world  ', { lang: 'en' })
+const cf = Controlflow.of('  hello world  ', { lang: 'en' })
 	.map((input: string, ctx: {}) => {
 		return input;
 	})

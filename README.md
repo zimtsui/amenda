@@ -27,14 +27,14 @@ import { Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
-	const messages = [
+export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	// The `yield` will never return if the downstream accepts the yielded result.
-	yield completion.choices[0].message.content;
+	yield completion.choices[0]!.message.content!;
 	throw new Error();
 }
 ```
@@ -48,15 +48,15 @@ import { Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
-	const messages = [
+export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
 	];
 	for (;;) {
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		const feedback: Upwards = yield completion.choices[0].message.content;
-		messages.push({ role: 'assistant', content: completion.choices[0].message.content });
+		const feedback: Upwards = yield completion.choices[0]!.message.content!;
+		messages.push({ role: 'assistant', content: completion.choices[0]!.message.content! });
 		messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${feedback.message}` });
 	}
 }
@@ -69,15 +69,16 @@ import { Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
-	const messages = [
+export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-	if (completion.choices[0].message.tool_calls[0]?.name === 'fail') throw new Upwards('The problem is too hard.');
+	if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'fail')
+		throw new Upwards('The problem is too hard.');
 	// The `throw` propagates the feedback from downstream to upstream.
-	throw yield completion.choices[0].message.content;
+	throw yield completion.choices[0]!.message.content!;
 }
 ```
 
@@ -90,13 +91,13 @@ import { Downwards, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
-	const messages = [
+export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-	const feedback: Upwards = yield completion.choices[0].message.content;
+	const feedback: Upwards = yield completion.choices[0]!.message.content!;
 	throw yield Promise.reject(new Downwards('My solution is correct, and your feedback is wrong.'));
 }
 ```
@@ -106,41 +107,35 @@ The input of a workflow can be the output of a previous workflow.
 ```ts
 import { Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
-
 declare const openai: OpenAI;
 
-async function *review(solutions: AsyncGenerator<string, never, Upwards>): AsyncGenerator<string, never, Upwards> {
+export async function *review(solutions: AsyncGenerator<string, never, Upwards>): AsyncGenerator<string, never, Upwards> {
 	for (let r = await solutions.next(), feedback: Upwards;; r = await solutions.next(feedback)) {
-		const messages = [
+		const messages: OpenAI.ChatCompletionMessageParam[] = [
 			{ role: 'system', content: 'Please review the solution of math problems.' },
 			{ role: 'user', content: r.value },
 		];
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		if (completion.choices[0].message.tool_calls[0]?.name === 'correct') throw yield r.value;
-		feedback = new Upwards(completion.choices[0].message.content);
+		if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'correct') throw yield r.value;
+		feedback = new Upwards(completion.choices[0]!.message.content!);
 	}
 }
 ```
 
 ### Controlflow
 
-A `Controlflow` composes workflows.
+A `Controlflow` is a wrapper of an async generator. It's intended to compose workflows.
 
 ```ts
-import { Controlflow } from '@zimtsui/amenda';
+import { Controlflow, Upwards } from '@zimtsui/amenda';
+declare function translateEnglishToChinese(englishText: string): AsyncGenerator<string, never, Upwards>;
 
-declare const translateEnglishToChinese: (englishText: string) => AsyncGenerator<string, never, Upwards>;
-declare const solveChineseMathProblem: Controlflow<string, string>;
-declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Upwards>;
-
-const cf = Controlflow
+const cf = Controlflow.from('What does 1+1 equal to ?')
 	.map((text: string) => text.trimStart())	// append a sync function
 	.transform(async (text: string) => text.trimEnd())	// append an async function
 	.then(translateEnglishToChinese)	// append an async generator function
-	.append(solveChineseMathProblem)	// append another Controlflow
-	.then(translateChineseToEnglish)
 ;
-export default await cf.callback('what does 1+1 equal to?');
+export default await cf.first();
 ```
 
 ### Stateful Workflows
@@ -150,32 +145,39 @@ A stateful workflow should return a tuple of the result and a new state.
 ```ts
 import { Controlflow } from '@zimtsui/amenda';
 
-const cf = Controlflow
-	.smap((x: null, state: void) => [x, { a: 1 }])	// append a stateful sync function
-	.sthen(async function *(x: null, state) {	// append a stateful async generator function
+const cf = Controlflow.create()
+	.smap((x: void, state: void) => [x, { a: 1 }])	// append a stateful sync function
+	.sthen(async function *(x: void, state) {	// append a stateful async generator function
 		throw yield [x, { ...state, b: 2 }];
 	})
-	.stransform(async (x: null, state) => [x, { ...state, c: 3 }])	// append a stateful async function
-	.smap((x: null, state) => [x, { ...state, s: state.a + state.b + state.c }])
-	.map((x: null, state) => state.s)
+	.stransform(async (x: void, state) => [x, { ...state, c: 3 }])	// append a stateful async function
+	.smap((x: void, state) => [x, { ...state, s: state.a + state.b + state.c }])
+	.map((x: void, state) => state.s)
 ;
-export default await cf.callback(null);	// 6
+export default await cf.first();	// 6
 ```
 
 ## Best Practices
 
+### Aliases
+
+```ts
+export type Draft<value> = AsyncGenerator<value, never, Upwards>;
+export type Amenda<value, state> = Draft<[value, state]>;
+```
+
 ### Conditional Workflow
 
 ```ts
-import { Upwards, Controlflow } from '@zimtsui/amenda';
+import { Upwards, Controlflow, type Draft } from '@zimtsui/amenda';
 
 declare const determineLanguage: (text: string) => Promise<'Chinese' | 'Russian' | 'English'>;
-declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Upwards>;
-declare const translateRussianToEnglish: (russianText: string) => AsyncGenerator<string, never, Upwards>;
-declare const solveEnglishMathProblem: (englishMathProblem: string) => AsyncGenerator<string, never, Upwards>;
+declare const translateChineseToEnglish: (chineseText: string) => Draft<string>;
+declare const translateRussianToEnglish: (russianText: string) => Draft<string>;
+declare const solveEnglishMathProblem: (englishMathProblem: string) => Draft<string>;
 
-const cf = Controlflow
-	.then(async function *(mathProblem: string): AsyncGenerator<string, never, Upwards> {
+const cf = Controlflow.from('1+1 等于几？')
+	.then(async function *(mathProblem: string): Draft<string> {
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': return yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': return yield *translateRussianToEnglish(mathProblem); break;
@@ -184,21 +186,23 @@ const cf = Controlflow
 		}
 	}).then(solveEnglishMathProblem)
 ;
-export default await cf.callback('1+1 等于几？');
+export default await cf.first();
+
 ```
 
 ### [Design Pattern of Optimizer Evaluator](https://www.anthropic.com/engineering/building-effective-agents)
 
 ```ts
-import { Upwards, Controlflow } from '@zimtsui/amenda';
+import { Upwards, Controlflow, type Amenda } from '@zimtsui/amenda';
 
-declare async function *generateCode(): AsyncGenerator<string, never, Upwards>;
+declare function generateCode(): AsyncGenerator<string, never, Upwards>;
 declare function syntaxCheck(code: string): void;
 
-async function *evaluator(optimization: AsyncGenerator<[string, state: void], never, Upwards>): AsyncGenerator<[string, state: void], never, Upwards> {
+async function *evaluator(optimization: Amenda<string, void>): Amenda<string, void> {
 	for (let r = await optimization.next(), feedback: Upwards;; r = await optimization.next(feedback)) try {
-		syntaxCheck(r.value[0]);
-		throw yield r.value;
+		const [code, state] = r.value;
+		syntaxCheck(code);
+		throw yield [code, state];
 	} catch (e) {
 		if (e instanceof SyntaxError) feedback = new Upwards(e.message);
 		else if (e instanceof Upwards) feedback = e;
@@ -206,30 +210,30 @@ async function *evaluator(optimization: AsyncGenerator<[string, state: void], ne
 	}
 }
 
-const cf = Controlflow
+const cf = Controlflow.create()
 	.then(generateCode)
 	.pipe(evaluator)	// append an evaluator
 ;
-export default await cf.callback();
+export default await cf.first();
 ```
 
 ### Parallel
 
 ```ts
-import { Controlflow, Upwards } from '@zimtsui/amenda';
+import { Controlflow, type Draft } from '@zimtsui/amenda';
 
-declare const translateChineseToEnglish: (chineseText: string) => AsyncGenerator<string, never, Upwards>;
-declare const translateChineseToRussian: (chineseText: string) => AsyncGenerator<string, never, Upwards>;
+declare const translateChineseToEnglish: (chineseText: string) => Draft<string>;
+declare const translateChineseToRussian: (chineseText: string) => Draft<string>;
 
-const cf = Controlflow
+const cf = Controlflow.from('1+1 等于几？')
 	.transform(async (chinese: string) => {
 		const [english, russian] = await Promise.all([
-			Controlflow.then(translateChineseToEnglish).callback(chinese),
-			Controlflow.then(translateChineseToRussian).callback(chinese),
+			Controlflow.from(chinese).then(translateChineseToEnglish).first(),
+			Controlflow.from(chinese).then(translateChineseToRussian).first(),
 		]);
 		return `# Chinese: ${chinese}\n\n# English: ${english}\n\n# Russian: ${russian}`;
 	});
-export default await cf.callback('1+1 等于几？');
+export default await cf.first();
 ```
 
 ## [Explanation of Amenda in Mathematics](./explanation.md)

@@ -6,8 +6,14 @@ export type Amenda<value, state = void> = Draft<[value, state]>;
 
 export class Controlflow<o = void, os = void> {
 	public constructor(public amenda: Amenda<o, os>) {}
-	public static from<o = void, os = void>(o: o, os: os): Controlflow<o, os> {
+	public static of<o, os>(o: o, os: os): Controlflow<o, os> {
 		return new Controlflow(Draft.eta([o, os]));
+	}
+	public static from<o>(o: o): Controlflow<o, void> {
+		return Controlflow.of<o, void>(o, undefined);
+	}
+	public static create(): Controlflow<void, void> {
+		return Controlflow.from<void>(undefined);
 	}
 	public first(): Promise<o> {
 		return Draft.to(this.amenda).then(([o]) => o);
