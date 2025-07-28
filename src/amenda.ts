@@ -1,41 +1,71 @@
 import { Draft } from './draft.ts';
 
 
-
 export type Amenda<value, state = void> = Draft<[value, state]>;
-export type Workflow<i, o, is, os> = (amenda: Amenda<i, is>) => Amenda<o, os>;
 
-export namespace Workflow {
-	export function sthen<i, o, is, os>(f: StatefulAsyncGeneratorFunction<i, o, is, os>): Workflow<i, o, is, os> {
-		return amenda => Draft.mu(Draft.map<[i, is], Amenda<o, os>>(([i, is]) => f(i, is))(amenda));
+
+export class Controlflow<o = void, os = void> {
+	public constructor(public amenda: Amenda<o, os>) {}
+	public static from<o = void, os = void>(o: o, os: os): Controlflow<o, os> {
+		return new Controlflow(Draft.eta([o, os]));
+	}
+	public first(): Promise<o> {
+		return Draft.to(this.amenda).then(([o]) => o);
 	}
 
-	export function stransform<i, o, is, os>(f: StatefulAsyncFunction<i, o, is, os>): Workflow<i, o, is, os> {
-		return sthen<i, o, is, os>((i, is) => Draft.from(f(i, is)));
+	/**
+	 * Appends a workflow
+	 * @returns A new Controlflow instance
+	 */
+	public pipe<nexto, nextos>(f: (amenda: Amenda<o, os>) => Amenda<nexto, nextos>): Controlflow<nexto, nextos> {
+		return new Controlflow(f(this.amenda));
 	}
 
-	export function smap<i, o, is, os>(f: StatefulSyncFunction<i, o, is, os>): Workflow<i, o, is, os> {
-		return stransform((i, is) => Promise.resolve(f(i, is)));
+	/**
+	 * Appends a stateful async generator function
+	 * @returns A new Controlflow instance
+	 */
+	public sthen<nexto, nextos>(f: (o: o, os: os) => Amenda<nexto, nextos>): Controlflow<nexto, nextos> {
+		return new Controlflow(Draft.mu(Draft.map<[o, os], Amenda<nexto, nextos>>(([o, os]) => f(o, os))(this.amenda)));
 	}
 
-	export function then<i, o, is>(f: StatelessAsyncGeneratorFunction<i, o, is>): Workflow<i, o, is, is> {
-		return sthen((i, is) => Draft.map<o, [o, is]>(o => [o, is])(f(i, is)));
+	/**
+	 * Appends a stateful async function
+	 * @returns A new Controlflow instance
+	 */
+	public stransform<nexto, nextos>(f: (o: o, os: os) => Promise<[nexto, nextos]>): Controlflow<nexto, nextos> {
+		return this.sthen((o, os) => Draft.from(f(o, os)));
 	}
 
-	export function transform<i, o, is>(f: StatelessAsyncFunction<i, o, is>): Workflow<i, o, is, is> {
-		return then((i, is) => Draft.from(f(i, is)));
+	/**
+	 * Appends a stateful sync function
+	 * @returns A new Controlflow instance
+	 */
+	public smap<nexto, nextos>(f: (o: o, os: os) => [nexto, nextos]): Controlflow<nexto, nextos> {
+		return this.stransform((o, os) => Promise.resolve(f(o, os)));
 	}
 
-	export function map<i, o, is>(f: StatelessSyncFunction<i, o, is>): Workflow<i, o, is, is> {
-		return transform((i, is) => Promise.resolve(f(i, is)));
+	/**
+	 * Appends a stateless generator function
+	 * @returns A new Controlflow instance
+	 */
+	public then<nexto>(f: (o: o, os: os) => Draft<nexto>): Controlflow<nexto, os> {
+		return this.sthen((o, os) => Draft.map<nexto, [nexto, os]>(nexto => [nexto, os])(f(o, os)));
 	}
 
-	export type StatefulAsyncGeneratorFunction<i, o, is, os> = (i: i, is: is) => Amenda<o, os>;
-	export type StatelessAsyncGeneratorFunction<i, o, is> = (i: i, is: is) => Draft<o>;
+	/**
+	 * Appends a stateless async function
+	 * @returns A new Controlflow instance
+	 */
+	public transform<nexto>(f: (o: o, os: os) => Promise<nexto>): Controlflow<nexto, os> {
+		return this.then((o, os) => Draft.from(f(o, os)));
+	}
 
-	export type StatefulAsyncFunction<i, o, is, os> = (i: i, is: is) => Promise<[o, os]>;
-	export type StatelessAsyncFunction<i, o, is> = (i: i, is: is) => Promise<o>;
-
-	export type StatefulSyncFunction<i, o, is, os> = (i: i, is: is) => [o, os];
-	export type StatelessSyncFunction<i, o, is> = (i: i, is: is) => o;
+	/**
+	 * Appends a stateless sync function
+	 * @returns A new Controlflow instance
+	 */
+	public map<nexto>(f: (o: o, os: os) => nexto): Controlflow<nexto, os> {
+		return this.transform((o, os) => Promise.resolve(f(o, os)));
+	}
 }

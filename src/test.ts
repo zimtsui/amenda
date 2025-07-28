@@ -1,8 +1,7 @@
-import { Controlflow } from './controlflow.ts';
+import { Controlflow } from './amenda.ts';
 
 
-const cf = Controlflow
-	.smap(() => ['  hello world  ', { lang: 'en' }])
+const cf = Controlflow.from('  hello world  ', { lang: 'en' })
 	.map((input: string, ctx: {}) => {
 		return input;
 	})
@@ -10,4 +9,4 @@ const cf = Controlflow
 	.transform(async (i: string) => i.trimEnd())
 	.map((i: string, ctx: { lang: string; }) => ctx.lang + ': ' + i);
 
-console.log(await cf.fun());
+console.log(await cf.first());
