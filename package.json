@@ -15,7 +15,7 @@
     "url": "https://github.com/zimtsui/amenda.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build && ava",
     "build": "tsc -b ./src/tsconfig.json",
     "clean": "rm -rf ./build"
   },
@@ -23,6 +23,11 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "ava": "^6.4.1",
     "openai": "^5.10.2"
+  },
+  "ava": {
+    "files": ["./build/test.js"],
+    "failWithoutAssertions": false
   }
 }
