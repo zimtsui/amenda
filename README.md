@@ -20,14 +20,18 @@ The answer is about the mechanism of retry. In traditional workflows, if a node 
 
 The output of a workflow can be represented as an async generator which yields the result value to the downstream.
 
+```ts
+export type Draft<value> = AsyncGenerator<value, never, Upwards>;
+```
+
 If the downstream accepts the yielded result, `.throw` of the generator will be called with a `Finalized` error.
 
 ```ts
-import { Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+export async function *solve(problem: string): Draft<string> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
@@ -44,11 +48,11 @@ If the downstream rejects the yielded result, the `.next` of the generator shoul
 `Upwards` is a subtype of `Error`. It's intended to represent an error sent from downstream to upstream.
 
 ```ts
-import { Upwards } from '@zimtsui/amenda';
+import { Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+export async function *solve(problem: string): Draft<string> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
@@ -65,11 +69,11 @@ export async function *solve(problem: string): AsyncGenerator<string, never, Upw
 A workflow can reject the input by throwing an `Upwards` to the upstream.
 
 ```ts
-import { Upwards } from '@zimtsui/amenda';
+import { Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+export async function *solve(problem: string): Draft<string> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
@@ -87,11 +91,11 @@ A workflow can also yield an `Downwards` to the downstream, for example, to reje
 `Downwards` is a subtype of `Error`. It's intended to represent an error sent from upstream to downstream.
 
 ```ts
-import { Downwards, Upwards } from '@zimtsui/amenda';
+import { Downwards, Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+export async function *solve(problem: string): Draft<string> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
@@ -105,11 +109,11 @@ export async function *solve(problem: string): AsyncGenerator<string, never, Upw
 The input of a workflow can be the output of a previous workflow.
 
 ```ts
-import { Upwards } from '@zimtsui/amenda';
+import { Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *review(solutions: AsyncGenerator<string, never, Upwards>): AsyncGenerator<string, never, Upwards> {
+export async function *review(solutions: Draft<string>): Draft<string> {
 	for (let r = await solutions.next(), feedback: Upwards;; r = await solutions.next(feedback)) {
 		const messages: OpenAI.ChatCompletionMessageParam[] = [
 			{ role: 'system', content: 'Please review the solution of math problems.' },
@@ -127,8 +131,8 @@ export async function *review(solutions: AsyncGenerator<string, never, Upwards>)
 A `Controlflow` is a wrapper of an async generator. It's intended to compose workflows.
 
 ```ts
-import { Controlflow, Upwards } from '@zimtsui/amenda';
-declare function translateEnglishToChinese(englishText: string): AsyncGenerator<string, never, Upwards>;
+import { Controlflow, Draft } from '@zimtsui/amenda';
+declare function translateEnglishToChinese(englishText: string): Draft<string>;
 
 const cf = Controlflow.from('What does 1+1 equal to ?')
 	.map((text: string) => text.trimStart())	// append a sync function
@@ -138,33 +142,7 @@ const cf = Controlflow.from('What does 1+1 equal to ?')
 export default await cf.first();
 ```
 
-### Stateful Workflows
-
-A stateful workflow should return a tuple of the result and a new state.
-
-```ts
-import { Controlflow } from '@zimtsui/amenda';
-
-const cf = Controlflow.create()
-	.smap((x: void, state: void) => [x, { a: 1 }])	// append a stateful sync function
-	.sthen(async function *(x: void, state) {	// append a stateful async generator function
-		throw yield [x, { ...state, b: 2 }];
-	})
-	.stransform(async (x: void, state) => [x, { ...state, c: 3 }])	// append a stateful async function
-	.smap((x: void, state) => [x, { ...state, s: state.a + state.b + state.c }])
-	.map((x: void, state) => state.s)
-;
-export default await cf.first();	// 6
-```
-
 ## Best Practices
-
-### Aliases
-
-```ts
-export type Draft<value> = AsyncGenerator<value, never, Upwards>;
-export type Amenda<value, state> = Draft<[value, state]>;
-```
 
 ### Conditional Workflow
 
@@ -193,16 +171,16 @@ export default await cf.first();
 ### [Design Pattern of Optimizer Evaluator](https://www.anthropic.com/engineering/building-effective-agents)
 
 ```ts
-import { Upwards, Controlflow, type Amenda } from '@zimtsui/amenda';
+import { Upwards, Controlflow, type Draft } from '@zimtsui/amenda';
 
-declare function generateCode(): AsyncGenerator<string, never, Upwards>;
+declare function generateCode(): Draft<string>;
 declare function syntaxCheck(code: string): void;
 
-async function *evaluator(optimization: Amenda<string, void>): Amenda<string, void> {
+async function *evaluator(optimization: Draft<string>): Draft<string> {
 	for (let r = await optimization.next(), feedback: Upwards;; r = await optimization.next(feedback)) try {
-		const [code, state] = r.value;
+		const code = r.value;
 		syntaxCheck(code);
-		throw yield [code, state];
+		throw yield code;
 	} catch (e) {
 		if (e instanceof SyntaxError) feedback = new Upwards(e.message);
 		else if (e instanceof Upwards) feedback = e;

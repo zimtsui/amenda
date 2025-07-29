@@ -1,8 +1,8 @@
-import { Upwards } from '@zimtsui/amenda';
+import { Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): AsyncGenerator<string, never, Upwards> {
+export async function *solve(problem: string): Draft<string> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },

@@ -1,13 +1,13 @@
-import { Upwards, Controlflow, type Amenda } from '@zimtsui/amenda';
+import { Upwards, Controlflow, type Draft } from '@zimtsui/amenda';
 
-declare function generateCode(): AsyncGenerator<string, never, Upwards>;
+declare function generateCode(): Draft<string>;
 declare function syntaxCheck(code: string): void;
 
-async function *evaluator(optimization: Amenda<string, void>): Amenda<string, void> {
+async function *evaluator(optimization: Draft<string>): Draft<string> {
 	for (let r = await optimization.next(), feedback: Upwards;; r = await optimization.next(feedback)) try {
-		const [code, state] = r.value;
+		const code = r.value;
 		syntaxCheck(code);
-		throw yield [code, state];
+		throw yield code;
 	} catch (e) {
 		if (e instanceof SyntaxError) feedback = new Upwards(e.message);
 		else if (e instanceof Upwards) feedback = e;

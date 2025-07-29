@@ -1,8 +1,8 @@
-import { Upwards } from '@zimtsui/amenda';
+import { Draft, Upwards } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *review(solutions: AsyncGenerator<string, never, Upwards>): AsyncGenerator<string, never, Upwards> {
+export async function *review(solutions: Draft<string>): Draft<string> {
 	for (let r = await solutions.next(), feedback: Upwards;; r = await solutions.next(feedback)) {
 		const messages: OpenAI.ChatCompletionMessageParam[] = [
 			{ role: 'system', content: 'Please review the solution of math problems.' },

@@ -1,5 +1,5 @@
-import { Controlflow, Upwards } from '@zimtsui/amenda';
-declare function translateEnglishToChinese(englishText: string): AsyncGenerator<string, never, Upwards>;
+import { Controlflow, Draft } from '@zimtsui/amenda';
+declare function translateEnglishToChinese(englishText: string): Draft<string>;
 
 const cf = Controlflow.from('What does 1+1 equal to ?')
 	.map((text: string) => text.trimStart())	// append a sync function
