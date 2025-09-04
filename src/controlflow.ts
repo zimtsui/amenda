@@ -4,12 +4,16 @@ import { Draft } from './draft.ts';
 export class Controlflow<o = void> {
 	private constructor(public draft: Draft<o>) {}
 
+	public static of<o>(draft: Draft<o>) {
+		return new Controlflow(draft);
+	}
+
 	public static from<o>(o: o): Controlflow<o> {
-		return new Controlflow(Draft.eta(o));
+		return Controlflow.of(Draft.eta(o));
 	}
 
 	public static create(): Controlflow<void> {
-		return Controlflow.from<void>(undefined);
+		return (Controlflow.from<void>)();
 	}
 
 	public first(): Promise<o> {

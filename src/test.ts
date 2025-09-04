@@ -94,6 +94,16 @@ test('Controlflow.from creates controlflow from value', async t => {
 	t.is(result, value);
 });
 
+// Test Controlflow.of
+test('Controlflow.of creates controlflow from draft', async t => {
+	const value = 'test from draft';
+	const draft = Draft.eta(value);
+	const cf = Controlflow.of(draft);
+	
+	const result = await cf.first();
+	t.is(result, value);
+});
+
 // Test Controlflow.create
 test('Controlflow.create creates empty controlflow', async t => {
 	const cf = Controlflow.create();
