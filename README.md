@@ -164,7 +164,7 @@ const cf = Controlflow.from('1+1 等于几？')
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': return yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': return yield *translateRussianToEnglish(mathProblem); break;
-			case 'English': throw yield mathProblem; break;
+			case 'English': return yield mathProblem; break;
 			default: throw new Error('Language Not Supported'); break;
 		}
 	}).then(solveEnglishMathProblem)
@@ -184,7 +184,7 @@ async function *evaluator(optimization: Draft<string>): Draft<string> {
 	for (let r = await optimization.next(), feedback: unknown;; r = await optimization.throw(feedback)) try {
 		const code = r.value;
 		syntaxCheck(code);
-		throw yield code;
+		return yield code;
 	} catch (e) {
 		feedback = e;
 	}

@@ -7,7 +7,7 @@ async function *evaluator(optimization: Draft<string>): Draft<string> {
 	for (let r = await optimization.next(), feedback: unknown;; r = await optimization.throw(feedback)) try {
 		const code = r.value;
 		syntaxCheck(code);
-		throw yield code;
+		return yield code;
 	} catch (e) {
 		feedback = e;
 	}

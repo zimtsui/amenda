@@ -10,7 +10,7 @@ const cf = Controlflow.from('1+1 等于几？')
 		switch (await determineLanguage(mathProblem)) {
 			case 'Chinese': return yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': return yield *translateRussianToEnglish(mathProblem); break;
-			case 'English': throw yield mathProblem; break;
+			case 'English': return yield mathProblem; break;
 			default: throw new Error('Language Not Supported'); break;
 		}
 	}).then(solveEnglishMathProblem)

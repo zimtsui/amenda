@@ -11,8 +11,7 @@ In analogy to the functor `Promise`, which maps from the category of present val
 `Promise` 函子从现值范畴映射到期值范畴，类比地，`Draft` 函子从终稿范畴映射到草稿范畴。
 
 ```ts
-export class Upwards extends Error {}
-export type Draft<t> = AsyncGenerator<t, never, Upwards>;
+export type Draft<t> = AsyncGenerator<t, never, never>;
 ```
 
 ## Natural Transformations of Draft Functor 草稿函子的自然变换
