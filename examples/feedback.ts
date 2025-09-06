@@ -1,4 +1,4 @@
-import { Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
@@ -9,8 +9,12 @@ export async function *solve(problem: string): Draft<string> {
 	];
 	for (;;) {
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		const feedback: Upwards = yield completion.choices[0]!.message.content!;
-		messages.push({ role: 'assistant', content: completion.choices[0]!.message.content! });
-		messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${feedback.message}` });
+		try {
+			return yield completion.choices[0]!.message.content!;
+		} catch (e) {
+			if (e instanceof Error) {} else throw e;
+			messages.push({ role: 'assistant', content: completion.choices[0]!.message.content! });
+			messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${e.message}` });
+		}
 	}
 }

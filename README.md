@@ -21,7 +21,7 @@ The answer is about the mechanism of retry. In traditional workflows, if a node 
 The output of a workflow can be represented as an async generator which yields the result value to the downstream.
 
 ```ts
-export type Draft<value> = AsyncGenerator<value, never, Upwards>;
+export type Draft<value> = AsyncGenerator<value, never, never>;
 ```
 
 If the downstream accepts the yielded result, `.throw` of the generator will be called with a `Finalized` error.
@@ -38,17 +38,14 @@ export async function *solve(problem: string): Draft<string> {
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	// The `yield` will never return if the downstream accepts the yielded result.
-	yield completion.choices[0]!.message.content!;
-	throw new Error();
+	return yield completion.choices[0]!.message.content!;
 }
 ```
 
-If the downstream rejects the yielded result, the `.next` of the generator should be called with an `Upwards` as feedback. In this case, the workflow should revise its output and yield a new version.
-
-`Upwards` is a subtype of `Error`. It's intended to represent an error sent from downstream to upstream.
+If the downstream rejects the yielded result, the `.throw` of the generator should be called with an exception as feedback. In this case, the workflow should revise its output and yield a new version.
 
 ```ts
-import { Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
@@ -59,17 +56,21 @@ export async function *solve(problem: string): Draft<string> {
 	];
 	for (;;) {
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		const feedback: Upwards = yield completion.choices[0]!.message.content!;
-		messages.push({ role: 'assistant', content: completion.choices[0]!.message.content! });
-		messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${feedback.message}` });
+		try {
+			return yield completion.choices[0]!.message.content!;
+		} catch (e) {
+			if (e instanceof Error) {} else throw e;
+			messages.push({ role: 'assistant', content: completion.choices[0]!.message.content! });
+			messages.push({ role: 'user', content: `Please revise your answer upon the feedback: ${e.message}` });
+		}
 	}
 }
 ```
 
-A workflow can reject the input by throwing an `Upwards` to the upstream.
+A workflow can reject the input by throwing an exception to the upstream.
 
 ```ts
-import { Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
@@ -80,50 +81,54 @@ export async function *solve(problem: string): Draft<string> {
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'fail')
-		throw new Upwards('The problem is too hard.');
-	// The `throw` propagates the feedback from downstream to upstream.
-	throw yield completion.choices[0]!.message.content!;
+		throw new Error('The problem is too hard.');
+	return yield completion.choices[0]!.message.content!;
 }
 ```
 
-A workflow can also yield an `Downwards` to the downstream, for example, to reject the feedback.
-
-`Downwards` is a subtype of `Error`. It's intended to represent an error sent from upstream to downstream.
+A workflow can also yield an exception to the downstream, for example, to oppose the feedback.
 
 ```ts
-import { Downwards, Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *solve(problem: string): Draft<string> {
+export async function *solve(problem: string): Draft<string | Error> {
 	const messages: OpenAI.ChatCompletionMessageParam[] = [
 		{ role: 'system', content: 'Please solve math problems.' },
 		{ role: 'user', content: problem },
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-	const feedback: Upwards = yield completion.choices[0]!.message.content!;
-	throw yield Promise.reject(new Downwards('My solution is correct, and your feedback is wrong.'));
+	try {
+		return yield completion.choices[0]!.message.content!;
+	} catch (e) {
+		return yield new Error('My solution is correct, and your feedback is wrong.');
+	}
 }
 ```
 
 The input of a workflow can be the output of a previous workflow.
 
 ```ts
-import { Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
-export async function *review(solutions: Draft<string>): Draft<string> {
-	for (let r = await solutions.next(), feedback: Upwards;; r = await solutions.next(feedback)) {
+export async function *review(solution: Draft<string>): Draft<string> {
+	for (let r = await solution.next(), feedback: unknown;; r = await solution.throw(feedback)) {
 		const messages: OpenAI.ChatCompletionMessageParam[] = [
 			{ role: 'system', content: 'Please review the solution of math problems.' },
 			{ role: 'user', content: r.value },
 		];
 		const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
-		if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'correct') throw yield r.value;
-		feedback = new Upwards(completion.choices[0]!.message.content!);
+		if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'correct') try {
+			return yield r.value;
+		} catch (e) {
+			feedback = e;
+		} else feedback = new Error(completion.choices[0]!.message.content!);
 	}
 }
+
 ```
 
 ### Controlflow
@@ -147,7 +152,7 @@ export default await cf.first();
 ### Conditional Workflow
 
 ```ts
-import { Upwards, Controlflow, type Draft } from '@zimtsui/amenda';
+import { Controlflow, type Draft } from '@zimtsui/amenda';
 
 declare const determineLanguage: (text: string) => Promise<'Chinese' | 'Russian' | 'English'>;
 declare const translateChineseToEnglish: (chineseText: string) => Draft<string>;
@@ -160,31 +165,28 @@ const cf = Controlflow.from('1+1 等于几？')
 			case 'Chinese': return yield *translateChineseToEnglish(mathProblem); break;
 			case 'Russian': return yield *translateRussianToEnglish(mathProblem); break;
 			case 'English': throw yield mathProblem; break;
-			default: throw new Upwards('Language Not Supported'); break;
+			default: throw new Error('Language Not Supported'); break;
 		}
 	}).then(solveEnglishMathProblem)
 ;
 export default await cf.first();
-
 ```
 
 ### [Design Pattern of Optimizer Evaluator](https://www.anthropic.com/engineering/building-effective-agents)
 
 ```ts
-import { Upwards, Controlflow, type Draft } from '@zimtsui/amenda';
+import { Controlflow, type Draft } from '@zimtsui/amenda';
 
 declare function generateCode(): Draft<string>;
 declare function syntaxCheck(code: string): void;
 
 async function *evaluator(optimization: Draft<string>): Draft<string> {
-	for (let r = await optimization.next(), feedback: Upwards;; r = await optimization.next(feedback)) try {
+	for (let r = await optimization.next(), feedback: unknown;; r = await optimization.throw(feedback)) try {
 		const code = r.value;
 		syntaxCheck(code);
 		throw yield code;
 	} catch (e) {
-		if (e instanceof SyntaxError) feedback = new Upwards(e.message);
-		else if (e instanceof Upwards) feedback = e;
-		else throw await optimization.throw(e).then(() => e);
+		feedback = e;
 	}
 }
 

@@ -1,4 +1,4 @@
-import { Draft, Upwards } from '@zimtsui/amenda';
+import { Draft } from '@zimtsui/amenda';
 import OpenAI from 'openai';
 declare const openai: OpenAI;
 
@@ -9,7 +9,6 @@ export async function *solve(problem: string): Draft<string> {
 	];
 	const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages });
 	if (completion.choices[0]!.message.tool_calls?.[0]?.function.name === 'fail')
-		throw new Upwards('The problem is too hard.');
-	// The `throw` propagates the feedback from downstream to upstream.
-	throw yield completion.choices[0]!.message.content!;
+		throw new Error('The problem is too hard.');
+	return yield completion.choices[0]!.message.content!;
 }
